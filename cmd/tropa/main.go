@@ -3,7 +3,8 @@
 //	tropa serve    — веб-сервер (миграции применяются при старте)
 //	tropa migrate  — только применить миграции
 //
-// Настройки через переменные окружения:
+// Настройки — переменные окружения или файл .env в корне проекта
+// (образец — .env.example; заданные в окружении важнее файла):
 //
 //	DATABASE_URL    postgres://user:pass@host:5432/db (обязательно)
 //	ADDR            адрес сервера, по умолчанию 127.0.0.1:8080
@@ -31,6 +32,15 @@ import (
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	if wd, err := os.Getwd(); err == nil {
+		if p := findDotEnv(wd); p != "" {
+			if err := loadDotEnv(p); err != nil {
+				log.Error(err.Error())
+				os.Exit(1)
+			}
+			log.Info("настройки из файла", "path", p)
+		}
+	}
 	cmd := "serve"
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
@@ -56,7 +66,8 @@ func main() {
 func withDB(ctx context.Context, fn func(*pgxpool.Pool) error) error {
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
-		return errors.New("не задан DATABASE_URL")
+		return errors.New("не задан DATABASE_URL: скопируйте .env.example в .env в корне проекта " +
+			"и укажите адрес базы (или задайте переменную окружения)")
 	}
 	pool, err := store.Open(ctx, url)
 	if err != nil {

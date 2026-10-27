@@ -17,9 +17,11 @@ docker compose up --build
 
 ```sh
 psql -U postgres -c "CREATE ROLE tropa LOGIN PASSWORD 'tropa'" -c "CREATE DATABASE tropa OWNER tropa"
-export DATABASE_URL=postgres://tropa:tropa@localhost:5432/tropa?sslmode=disable
-go run ./cmd/tropa serve
+cp .env.example .env        # адрес базы и порт; .env не попадает в git
+go run ./cmd/tropa serve    # http://127.0.0.1:8080
 ```
+
+В GoLand есть готовая конфигурация запуска **Tropa serve** (`.run/Tropa.run.xml`). Приложение само находит `.env` в корне проекта, даже если запущено из подпапки. Переменные окружения важнее файла.
 
 ## Тесты
 
