@@ -1,0 +1,40 @@
+{{define "title"}}{{.Data.Place.Name}}{{end}}
+{{define "head"}}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+{{end}}
+{{define "content"}}
+{{with .Data.Place}}
+<article class="place">
+  <p><a href="/">← К карте</a></p>
+  <span class="badge cat-{{.Category}}">{{.Category.Label}} · {{.Kind.Label}}</span>
+  <h1>{{.Name}}</h1>
+  {{with .Address}}<p class="lead">{{.}}</p>{{end}}
+
+  <ul class="tags">
+    <li>{{if .Indoor}}В помещении{{else}}На улице{{end}}</li>
+    {{if .Free}}<li>Бесплатно</li>{{end}}
+    <li>{{.Season.Label}}</li>
+    {{if eq .Area "region"}}<li>За городом</li>{{end}}
+  </ul>
+
+  {{with .Description}}<div class="description">{{.}}</div>{{end}}
+  {{with .OpeningHours}}<p><strong>Часы работы:</strong> {{.}}</p>{{end}}
+
+  <div class="actions">
+    <a class="btn" href="{{.TwoGISURL}}" target="_blank" rel="noopener">Открыть в 2ГИС</a>
+    {{with .Website}}<a class="btn ghost" href="{{.}}" target="_blank" rel="noopener nofollow">Сайт</a>{{end}}
+  </div>
+
+  <div id="place-map" class="place-map" data-lat="{{.Lat}}" data-lon="{{.Lon}}" data-category="{{.Category}}"
+       role="img" aria-label="{{.Name}} на карте"></div>
+
+  {{if $.Data.OSMURL}}
+  <p class="muted small">Данные: <a href="{{$.Data.OSMURL}}" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
+  {{end}}
+</article>
+{{end}}
+{{end}}
+{{define "scripts"}}
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/map.js"></script>
+{{end}}

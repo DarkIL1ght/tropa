@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"tropa/internal/auth"
-	"tropa/internal/trips"
 )
 
 // flashText — тексты коротких сообщений по коду из cookie.
@@ -30,21 +29,6 @@ type accountForm struct {
 	Name   string
 	Next   string
 	Errors map[string]string
-}
-
-// homeTrips — сколько ближайших походов показывать на главной.
-const homeTrips = 6
-
-func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	page, err := s.trips.Catalog(r.Context(), trips.Filter{Page: 1})
-	if err != nil {
-		s.serverError(w, r, err)
-		return
-	}
-	if len(page.Trips) > homeTrips {
-		page.Trips = page.Trips[:homeTrips]
-	}
-	s.render(w, r, http.StatusOK, "home.html", page)
 }
 
 func (s *Server) registerForm(w http.ResponseWriter, r *http.Request) {

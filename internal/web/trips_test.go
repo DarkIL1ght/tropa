@@ -104,9 +104,6 @@ func TestTripFlow(t *testing.T) {
 	if _, body := guest.get("/trips?q=кольсай"); !strings.Contains(body, "Кольсай") {
 		t.Fatal("нет в каталоге после открытия")
 	}
-	if _, body := guest.get("/"); !strings.Contains(body, "Кольсай") {
-		t.Fatal("нет на главной")
-	}
 
 	// чужой пользователь не правит и не меняет статус
 	if code, _ := other.get(loc + "/edit"); code != http.StatusForbidden {

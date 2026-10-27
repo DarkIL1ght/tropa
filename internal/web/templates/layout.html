@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{block "title" .}}Tropa{{end}} · Tropa</title>
   <link rel="stylesheet" href="/static/app.css">
+  {{block "head" .}}{{end}}
 </head>
-<body>
+<body class="{{block "body_class" .}}{{end}}">
   <header class="top">
     <a class="logo" href="/">Tropa</a>
     <nav>
-      <a href="/trips">Походы</a>
+      <a href="/">Карта</a>
+      <a class="nav-secondary" href="/trips">Походы</a>
       {{if .User}}
         <a href="/me">{{.User.Name}}</a>
         <form method="post" action="/logout" class="inline">
@@ -27,6 +29,7 @@
     {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
     {{block "content" .}}{{end}}
   </main>
+  {{block "scripts" .}}{{end}}
 </body>
 </html>
 

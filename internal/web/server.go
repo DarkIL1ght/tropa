@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/places"
 	"tropa/internal/trips"
 )
 
@@ -23,16 +24,24 @@ type Config struct {
 	Secure bool
 }
 
-type Server struct {
-	cfg   Config
-	auth  *auth.Service
-	trips *trips.Service
-	log   *slog.Logger
-	pages map[string]*template.Template
+// Services — бизнес-сервисы, которыми пользуются обработчики.
+type Services struct {
+	Auth   *auth.Service
+	Trips  *trips.Service
+	Places *places.Service
 }
 
-func New(cfg Config, a *auth.Service, t *trips.Service, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: a, trips: t, log: log}
+type Server struct {
+	cfg    Config
+	auth   *auth.Service
+	trips  *trips.Service
+	places *places.Service
+	log    *slog.Logger
+	pages  map[string]*template.Template
+}
+
+func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
+	s := &Server{cfg: cfg, auth: svc.Auth, trips: svc.Trips, places: svc.Places, log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -73,7 +82,9 @@ func (s *Server) Handler() http.Handler {
 	static, _ := fs.Sub(assets, "static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
 
-	mux.HandleFunc("GET /{$}", s.home)
+	mux.HandleFunc("GET /{$}", s.mapPage)
+	mux.HandleFunc("GET /api/places", s.apiPlaces)
+	mux.HandleFunc("GET /places/{slug}", s.showPlace)
 	mux.HandleFunc("GET /register", s.registerForm)
 	mux.HandleFunc("POST /register", s.register)
 	mux.HandleFunc("GET /login", s.loginForm)
@@ -158,8 +169,10 @@ func securityHeaders(next http.Handler) http.Handler {
 		h := w.Header()
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")
-		h.Set("Referrer-Policy", "same-origin")
-		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'none'")
+		// Плитки OSM требуют Referer: отдаём только origin, без пути и параметров.
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; "+
+			"style-src 'self'; script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'")
 		next.ServeHTTP(w, r)
 	})
 }

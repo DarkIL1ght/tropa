@@ -11,7 +11,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"tropa/internal/auth"
+	"tropa/internal/places"
 	"tropa/internal/store/storetest"
 	"tropa/internal/trips"
 )
@@ -62,14 +65,21 @@ func (c *client) post(from, path string, form url.Values) *http.Response {
 }
 
 func newTestServer(t *testing.T) *httptest.Server {
+	ts, _ := newTestEnv(t)
+	return ts
+}
+
+// newTestEnv — сервер и его база (для тестов, которым нужно засеять данные).
+func newTestEnv(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
 	db := storetest.New(t)
-	srv, err := New(Config{}, auth.New(db), trips.New(db), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv, err := New(Config{}, Services{Auth: auth.New(db), Trips: trips.New(db), Places: places.New(db)},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
-	return ts
+	return ts, db
 }
 
 func TestAccountFlow(t *testing.T) {

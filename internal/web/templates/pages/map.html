@@ -1,0 +1,34 @@
+{{define "title"}}Куда пойти в Алматы{{end}}
+{{define "head"}}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/static/vendor/markercluster/MarkerCluster.css">
+{{end}}
+{{define "body_class"}}map-body{{end}}
+{{define "content"}}
+<div class="map-app">
+  <aside class="panel" id="panel" aria-label="Места">
+    <form class="panel-filters" id="filters" role="search">
+      <label class="sr-only" for="q">Поиск места</label>
+      <input type="search" id="q" name="q" placeholder="Поиск: Медеу, каток, музей…" autocomplete="off">
+      <div class="chips" role="group" aria-label="Что ищем">
+        {{range .Data.Categories}}
+        <button type="button" class="chip cat-{{.}}" data-cat="{{.}}" aria-pressed="false">{{.Label}}</button>
+        {{end}}
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" name="indoor" id="indoor"> Только в помещении</label>
+        <label class="toggle"><input type="checkbox" name="free" id="free"> Бесплатно</label>
+      </div>
+    </form>
+    <p class="panel-count muted" id="count" aria-live="polite">Загружаем места…</p>
+    <ul class="place-list" id="place-list"></ul>
+  </aside>
+  <div id="map" class="map" role="application" aria-label="Карта мест"></div>
+  <button type="button" class="panel-toggle btn" id="panel-toggle" aria-controls="panel" aria-expanded="false">Список мест</button>
+</div>
+{{end}}
+{{define "scripts"}}
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/vendor/markercluster/leaflet.markercluster.js"></script>
+<script src="/static/map.js"></script>
+{{end}}

@@ -138,7 +138,8 @@ func serve(ctx context.Context, log *slog.Logger) error {
 			return err
 		}
 		authSvc := auth.New(pool)
-		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"}, authSvc, trips.New(pool), log)
+		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"},
+			web.Services{Auth: authSvc, Trips: trips.New(pool), Places: places.New(pool)}, log)
 		if err != nil {
 			return err
 		}

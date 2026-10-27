@@ -8,6 +8,11 @@
   --on-accent: #ffffff;
   --danger: #b3261e;
   --radius: 10px;
+  --cat-nature: #2f7d4f;
+  --cat-active: #1f6fb2;
+  --cat-indoor: #b5562b;
+  --cat-culture: #7a4bb0;
+  --header-h: 57px;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -20,6 +25,10 @@
     --accent: #6fbf95;
     --on-accent: #0f1a14;
     --danger: #f2948c;
+    --cat-nature: #5fbf85;
+    --cat-active: #5aa6e8;
+    --cat-indoor: #e8885a;
+    --cat-culture: #b48be6;
   }
 }
 
@@ -117,3 +126,98 @@ textarea { resize: vertical; }
 .description { white-space: pre-line; max-width: 70ch; margin-bottom: 20px; }
 .manage { margin-top: 24px; }
 .manage h2 { margin-top: 0; }
+
+.small { font-size: 14px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Цвета групп мест */
+.cat-nature { --c: var(--cat-nature); }
+.cat-active { --c: var(--cat-active); }
+.cat-indoor { --c: var(--cat-indoor); }
+.cat-culture { --c: var(--cat-culture); }
+.badge[class*="cat-"] { background: var(--c); color: #fff; }
+
+/* Карта на главной: шапка + карта на весь остаток экрана */
+.top { min-height: var(--header-h); box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+.map-body main { max-width: none; padding: 0; }
+.map-body .flash { position: absolute; z-index: 1000; top: calc(var(--header-h) + 12px); left: 50%; transform: translateX(-50%); margin: 0; }
+.map-app {
+  position: relative; display: grid; grid-template-columns: 360px 1fr;
+  height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h));
+}
+.map { height: 100%; width: 100%; background: var(--line); }
+.panel {
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface); border-right: 1px solid var(--line);
+}
+.panel-filters { display: grid; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 14px; cursor: pointer; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--c, var(--line)); background: transparent; color: var(--text);
+}
+.chip[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #fff; }
+.toggles { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.toggle { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 14px; cursor: pointer; }
+.toggle input { width: auto; }
+.panel-count { margin: 0; padding: 8px 16px; font-size: 14px; }
+.place-list { list-style: none; margin: 0; padding: 0 8px 16px; overflow-y: auto; flex: 1; }
+.place-item {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+  padding: 10px 8px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit;
+}
+.place-item:hover { background: var(--bg); }
+.place-item .pin { margin-top: 3px; flex: none; }
+.place-text { display: grid; gap: 2px; }
+.place-name { font-weight: 600; }
+.place-text .muted { font-size: 13px; }
+.panel-toggle { display: none; }
+
+/* Маркеры */
+.pin-wrap { background: none; border: 0; }
+.pin {
+  display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c, var(--accent)); border: 3px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .45);
+  box-sizing: content-box;
+}
+.marker-cluster { background: none; }
+.marker-cluster div {
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 14px;
+  border: 3px solid #fff; box-shadow: 0 1px 6px rgb(0 0 0 / .4); box-sizing: border-box;
+}
+.marker-cluster span { line-height: 1; }
+.popup { display: grid; gap: 4px; min-width: 160px; font: 14px/1.4 system-ui, sans-serif; }
+.popup strong { font-size: 15px; }
+.leaflet-container a { color: var(--accent); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); }
+
+/* Страница места */
+.place h1 { margin: 8px 0 4px; font-size: clamp(26px, 4vw, 34px); }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 16px; }
+.tags li { font-size: 14px; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.place-map { height: 320px; border-radius: var(--radius); border: 1px solid var(--line); margin: 20px 0 8px; }
+
+/* Телефон: карта на весь экран, список — шторкой снизу */
+@media (max-width: 760px) {
+  .top { padding: 10px 12px; gap: 8px; }
+  .top nav { gap: 10px; font-size: 14px; }
+  .top .btn.small { padding: 5px 9px; }
+  .map-app { grid-template-columns: 1fr; }
+  .panel {
+    position: absolute; z-index: 1001; left: 0; right: 0; bottom: 0; height: 72%;
+    border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgb(0 0 0 / .25); transform: translateY(calc(100% - 68px));
+    transition: transform .25s ease;
+  }
+  .panel.open { transform: none; }
+  .panel-toggle {
+    display: block; position: absolute; z-index: 1002; left: 50%; bottom: 80px; transform: translateX(-50%);
+    box-shadow: 0 2px 10px rgb(0 0 0 / .3);
+  }
+  .panel.open ~ .panel-toggle { bottom: auto; top: calc(28% - 56px); }
+  .map .leaflet-bottom { bottom: 72px; }
+}
+@media (max-width: 420px) { .nav-secondary { display: none; } }
+@media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
