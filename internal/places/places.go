@@ -77,10 +77,10 @@ func (b BBox) Contains(lat, lon float64) bool {
 }
 
 var (
-	// RegionBBox — с запасом охватывает Алматинскую область в границах после
-	// 2022 года (от Балхаша на севере до хребтов у Хан-Тенгри на юго-востоке).
+	// RegionBBox — рамка вокруг Алматинской области в границах после 2022 года.
+	// Только для быстрого отсева и рамки карты: точная проверка — InArea.
 	RegionBBox = BBox{South: 42.1, West: 74.0, North: 46.8, East: 80.6}
-	// CityBBox — Алматы с пригородами у подножия гор.
+	// CityBBox — рамка вокруг Алматы (точная проверка — InCity).
 	// Юг — до верховий Малой Алматинки (пик Горельник ≈ 43.04).
 	CityBBox = BBox{South: 43.00, West: 76.70, North: 43.45, East: 77.20}
 )
@@ -153,14 +153,14 @@ func (p *Place) Validate() map[string]string {
 	} else if !validKind(p.Category, p.Kind) {
 		errs["kind"] = fmt.Sprintf("вид %q не из группы %s", p.Kind, p.Category)
 	}
+	actual := AreaOf(p.Lat, p.Lon)
 	switch {
-	case !RegionBBox.Contains(p.Lat, p.Lon):
-		errs["coords"] = "координаты вне Алматинской области"
-	case p.Area == Almaty && !CityBBox.Contains(p.Lat, p.Lon):
-		errs["coords"] = "место с area=almaty вне Алматы"
-	}
-	if p.Area != Almaty && p.Area != Region {
+	case p.Area != Almaty && p.Area != Region:
 		errs["area"] = "area — almaty или region"
+	case actual == "":
+		errs["coords"] = "координаты вне Алматы и Алматинской области"
+	case actual != p.Area:
+		errs["coords"] = fmt.Sprintf("по координатам это %s, а указано area=%s", actual, p.Area)
 	}
 	if p.Season.Label() == "" {
 		errs["season"] = "season — all_year, summer или winter"

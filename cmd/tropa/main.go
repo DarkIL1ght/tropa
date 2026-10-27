@@ -4,6 +4,9 @@
 //	tropa migrate             — только применить миграции
 //	tropa seed [папка]        — загрузить места из data/places/*.json (идемпотентно)
 //	tropa make-admin <email>  — выдать роль админа зарегистрированному пользователю
+//	tropa osm-fetch [--from raw.json]
+//	                          — кандидаты из OpenStreetMap в data/places/candidates.json
+//	                            (базу не трогает; сырой ответ кэшируется во временной папке)
 //
 // Настройки — переменные окружения или файл .env в корне проекта
 // (образец — .env.example; заданные в окружении важнее файла):
@@ -14,7 +17,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -28,6 +33,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/osm"
 	"tropa/internal/places"
 	"tropa/internal/store"
 	"tropa/internal/trips"
@@ -60,6 +66,8 @@ func main() {
 		err = withDB(ctx, func(pool *pgxpool.Pool) error { return migrate(ctx, log, pool) })
 	case "seed":
 		err = seed(ctx, log, os.Args[2:])
+	case "osm-fetch":
+		err = osmFetch(ctx, log, os.Args[2:])
 	case "make-admin":
 		if len(os.Args) != 3 {
 			err = errors.New("использование: tropa make-admin <email>")
@@ -76,7 +84,7 @@ func main() {
 			return nil
 		})
 	default:
-		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate, seed, make-admin)", cmd)
+		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate, seed, make-admin, osm-fetch)", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
@@ -122,6 +130,75 @@ func seed(ctx context.Context, log *slog.Logger, args []string) error {
 		log.Info("места загружены", "dir", dir, "total", len(list), "result", st.String())
 		return nil
 	})
+}
+
+// osmFetch скачивает объекты OSM по области и пишет кандидатов, которых
+// ещё нет в data/places. Файл кандидатов — для ручного разбора, seed его
+// пропускает.
+func osmFetch(ctx context.Context, log *slog.Logger, args []string) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(moduleRoot(wd), "data", "places")
+	existing, err := places.LoadSeed(os.DirFS(dir))
+	if err != nil {
+		return fmt.Errorf("%s: %w", dir, err)
+	}
+
+	cache := filepath.Join(os.TempDir(), "tropa-osm-raw.json")
+	var elems []osm.Element
+	switch {
+	case len(args) == 2 && args[0] == "--from":
+		data, err := os.ReadFile(args[1])
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(data, &elems); err != nil {
+			return fmt.Errorf("%s: %w", args[1], err)
+		}
+		log.Info("объекты из файла", "path", args[1], "count", len(elems))
+	case len(args) == 0:
+		log.Info("запрос к Overpass — до нескольких минут")
+		c := &osm.Client{Retries: 3}
+		if elems, err = c.Fetch(ctx, osm.Query(places.RegionBBox)); err != nil {
+			return err
+		}
+		raw, _ := json.Marshal(elems)
+		if err := os.WriteFile(cache, raw, 0o644); err != nil {
+			return err
+		}
+		log.Info("объекты OSM получены", "count", len(elems), "cache", cache)
+	default:
+		return errors.New("использование: tropa osm-fetch [--from raw.json]")
+	}
+
+	cands := osm.Candidates(elems, osm.NewExisting(existing))
+	out := filepath.Join(dir, "candidates.json")
+	if err := writePlacesJSON(out, cands); err != nil {
+		return err
+	}
+	byKind := map[string]int{}
+	for _, p := range cands {
+		byKind[string(p.Category)+"/"+string(p.Kind)]++
+	}
+	log.Info("кандидаты записаны", "path", out, "count", len(cands), "by_kind", fmt.Sprint(byKind))
+	return nil
+}
+
+// writePlacesJSON — JSON с отступами, кириллица без экранирования.
+func writePlacesJSON(path string, list []*places.Place) error {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if list == nil {
+		list = []*places.Place{}
+	}
+	if err := enc.Encode(list); err != nil {
+		return err
+	}
+	return os.WriteFile(path, buf.Bytes(), 0o644)
 }
 
 func migrate(ctx context.Context, log *slog.Logger, pool *pgxpool.Pool) error {

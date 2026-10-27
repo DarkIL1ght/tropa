@@ -234,3 +234,26 @@ func TestSeedAndSearch(t *testing.T) {
 		t.Errorf("limit: %d", n)
 	}
 }
+
+func TestBoundaries(t *testing.T) {
+	for name, c := range map[string]struct {
+		lat, lon float64
+		want     Area
+	}{
+		"центр Алматы": {43.24, 76.92, Almaty},
+		"Шымбулак":     {43.123, 77.093, Almaty},
+		"Конаев":       {43.87, 77.07, Region},
+		"Каскелен":     {43.20, 76.62, Region},
+		"Талгар":       {43.30, 77.24, Region},
+		"Чарын":        {43.325, 79.058, Region},
+		"Бишкек":       {42.87, 74.59, ""},
+		"Каракол":      {42.49, 78.39, ""},
+		"Талдыкорган":  {45.02, 78.37, ""},
+		"Жаркент":      {44.16, 80.00, ""},
+		"Астана":       {51.13, 71.43, ""},
+	} {
+		if got := AreaOf(c.lat, c.lon); got != c.want {
+			t.Errorf("%s: %q, ждали %q", name, got, c.want)
+		}
+	}
+}
