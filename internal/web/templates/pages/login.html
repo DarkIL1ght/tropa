@@ -1,0 +1,19 @@
+{{define "title"}}Вход{{end}}
+{{define "content"}}
+<form method="post" action="/login" class="card form">
+  <h1>Вход</h1>
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  {{with .Data}}
+  <input type="hidden" name="next" value="{{.Next}}">
+  {{with index .Errors "form"}}<p class="err">{{.}}</p>{{end}}
+  <label>Email
+    <input type="email" name="email" value="{{.Email}}" required autocomplete="email">
+  </label>
+  {{end}}
+  <label>Пароль
+    <input type="password" name="password" required autocomplete="current-password">
+  </label>
+  <button class="btn">Войти</button>
+  <p class="muted">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+</form>
+{{end}}

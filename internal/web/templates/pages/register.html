@@ -1,0 +1,27 @@
+{{define "title"}}Регистрация{{end}}
+{{define "content"}}
+<form method="post" action="/register" class="card form">
+  <h1>Регистрация</h1>
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  {{with .Data}}
+  <label>Email
+    <input type="email" name="email" value="{{.Email}}" required autocomplete="email">
+    {{with index .Errors "email"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  <label>Имя
+    <input name="name" value="{{.Name}}" required minlength="2" maxlength="60" autocomplete="name">
+    {{with index .Errors "name"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  <label>Пароль
+    <input type="password" name="password" required minlength="8" autocomplete="new-password">
+    {{with index .Errors "password"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  <label>Пароль ещё раз
+    <input type="password" name="password2" required autocomplete="new-password">
+    {{with index .Errors "password2"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  {{end}}
+  <button class="btn">Создать аккаунт</button>
+  <p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
+</form>
+{{end}}

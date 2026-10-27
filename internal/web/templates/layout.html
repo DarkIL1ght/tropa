@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}Tropa{{end}} · Tropa</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="/">Tropa</a>
+    <nav>
+      {{if .User}}
+        <a href="/me">{{.User.Name}}</a>
+        <form method="post" action="/logout" class="inline">
+          <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+          <button class="link">Выйти</button>
+        </form>
+      {{else}}
+        <a href="/login">Вход</a>
+        <a class="btn small" href="/register">Регистрация</a>
+      {{end}}
+    </nav>
+  </header>
+  <main>
+    {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
+    {{block "content" .}}{{end}}
+  </main>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{{define "title"}}Походы{{end}}
+{{define "content"}}
+<section class="hero">
+  <h1>Походы без хаоса в чатах</h1>
+  <p>Tropa сама ведёт запись и лист ожидания, рассаживает по машинам и палаткам, следит за взносами и снаряжением и напоминает в Telegram.</p>
+  {{if not .User}}<a class="btn" href="/register">Начать</a>{{end}}
+</section>
+<p class="muted">Каталог походов появится на следующем этапе.</p>
+{{end}}

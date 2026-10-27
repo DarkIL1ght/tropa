@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: tropa
+      POSTGRES_PASSWORD: tropa # только для локальной разработки
+      POSTGRES_DB: tropa
+    volumes:
+      - tropa-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tropa"]
+      interval: 2s
+      retries: 15
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://tropa:tropa@db:5432/tropa?sslmode=disable
+    # только локально: без HTTPS-прокси наружу не открывать
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+volumes:
+  tropa-db:
