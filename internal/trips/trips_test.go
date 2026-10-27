@@ -215,14 +215,25 @@ func TestCatalog(t *testing.T) {
 		return id
 	}
 
-	late := open(func(in *Input) { in.Title = "Чарын"; in.Region = "Алматинская область"; in.StartDate, in.EndDate = "2027-05-01", "2027-05-02" })
-	early := open(func(in *Input) { in.Title = "Бурабай"; in.Region = "Акмолинская область"; in.Difficulty = "easy" })
+	late := open(func(in *Input) {
+		in.Title = "Чарын"
+		in.Region = "Алматинская область"
+		in.StartDate, in.EndDate = "2027-05-01", "2027-05-02"
+	})
+	early := open(func(in *Input) {
+		in.Title = "Бурабай"
+		in.Region = "Акмолинская область"
+		in.Difficulty = "easy"
+	})
 	create(t, s, org, func(in *Input) { in.Title = "Черновик" }) // не в каталоге
 	weird := open(func(in *Input) { in.Title = "Скидка 50% на Big_Almaty" })
 
 	// закончился: создаём в «прошлом» сдвигом часов
 	s.Now = func() time.Time { return fixedNow.AddDate(0, 0, -20) }
-	past := open(func(in *Input) { in.Title = "Февральский"; in.StartDate, in.EndDate = "2027-02-12", "2027-02-13" })
+	past := open(func(in *Input) {
+		in.Title = "Февральский"
+		in.StartDate, in.EndDate = "2027-02-12", "2027-02-13"
+	})
 	s.Now = func() time.Time { return fixedNow }
 
 	ids := func(f Filter) []int64 {
