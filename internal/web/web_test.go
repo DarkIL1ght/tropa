@@ -13,6 +13,7 @@ import (
 
 	"tropa/internal/auth"
 	"tropa/internal/store/storetest"
+	"tropa/internal/trips"
 )
 
 // client — браузер с cookie, который умеет доставать CSRF-токен из страницы.
@@ -61,7 +62,8 @@ func (c *client) post(from, path string, form url.Values) *http.Response {
 }
 
 func newTestServer(t *testing.T) *httptest.Server {
-	srv, err := New(Config{}, auth.New(storetest.New(t)), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	db := storetest.New(t)
+	srv, err := New(Config{}, auth.New(db), trips.New(db), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}

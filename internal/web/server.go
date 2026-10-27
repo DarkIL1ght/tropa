@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/trips"
 )
 
 //go:embed templates static
@@ -25,12 +26,13 @@ type Config struct {
 type Server struct {
 	cfg   Config
 	auth  *auth.Service
+	trips *trips.Service
 	log   *slog.Logger
 	pages map[string]*template.Template
 }
 
-func New(cfg Config, a *auth.Service, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: a, log: log}
+func New(cfg Config, a *auth.Service, t *trips.Service, log *slog.Logger) (*Server, error) {
+	s := &Server{cfg: cfg, auth: a, trips: t, log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -38,7 +40,12 @@ func New(cfg Config, a *auth.Service, log *slog.Logger) (*Server, error) {
 }
 
 var funcs = template.FuncMap{
-	"date": func(t time.Time) string { return t.Format("02.01.2006") },
+	"date":      func(t time.Time) string { return t.Format("02.01.2006") },
+	"dateRange": dateRange,
+	"money":     money,
+	"plural":    plural,
+	"add":       func(a, b int) int { return a + b },
+	"sub":       func(a, b int) int { return a - b },
 }
 
 // loadTemplates собирает каждую страницу как layout + своя страница,
@@ -73,6 +80,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /login", s.login)
 	mux.HandleFunc("POST /logout", s.logout)
 	mux.Handle("GET /me", auth.RequireUser(http.HandlerFunc(s.me)))
+
+	mux.HandleFunc("GET /trips", s.catalog)
+	mux.Handle("GET /trips/new", auth.RequireUser(http.HandlerFunc(s.newTrip)))
+	mux.Handle("POST /trips", auth.RequireUser(http.HandlerFunc(s.createTrip)))
+	mux.HandleFunc("GET /trips/{id}", s.showTrip)
+	mux.Handle("GET /trips/{id}/edit", auth.RequireUser(http.HandlerFunc(s.editTrip)))
+	mux.Handle("POST /trips/{id}/edit", auth.RequireUser(http.HandlerFunc(s.updateTrip)))
+	mux.Handle("POST /trips/{id}/status", auth.RequireUser(http.HandlerFunc(s.setTripStatus)))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
 	return s.recoverer(securityHeaders(s.auth.Middleware(s.cfg.Secure)(mux)))

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"tropa/internal/auth"
+	"tropa/internal/trips"
 )
 
 // flashText — тексты коротких сообщений по коду из cookie.
@@ -13,6 +14,15 @@ var flashText = map[string]string{
 	"welcome": "Добро пожаловать в Tropa!",
 	"login":   "Вы вошли.",
 	"logout":  "Вы вышли из аккаунта.",
+
+	"trip_created":     "Поход создан как черновик. Проверьте детали и откройте запись.",
+	"trip_saved":       "Изменения сохранены.",
+	"trip_locked":      "Прошедший или отменённый поход не редактируется.",
+	"trip_stale":       "Статус похода уже изменился — вот актуальный.",
+	"status_open":      "Запись открыта.",
+	"status_closed":    "Запись закрыта.",
+	"status_done":      "Поход отмечен как прошедший.",
+	"status_cancelled": "Поход отменён.",
 }
 
 type accountForm struct {
@@ -22,8 +32,19 @@ type accountForm struct {
 	Errors map[string]string
 }
 
+// homeTrips — сколько ближайших походов показывать на главной.
+const homeTrips = 6
+
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "home.html", nil)
+	page, err := s.trips.Catalog(r.Context(), trips.Filter{Page: 1})
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+	if len(page.Trips) > homeTrips {
+		page.Trips = page.Trips[:homeTrips]
+	}
+	s.render(w, r, http.StatusOK, "home.html", page)
 }
 
 func (s *Server) registerForm(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +132,12 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "me.html", nil)
+	mine, err := s.trips.ByOrganizer(r.Context(), auth.CurrentUser(r.Context()).ID)
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+	s.render(w, r, http.StatusOK, "me.html", mine)
 }
 
 // startSession открывает новую сессию; старую cookie (если была)

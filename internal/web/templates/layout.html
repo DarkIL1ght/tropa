@@ -10,6 +10,7 @@
   <header class="top">
     <a class="logo" href="/">Tropa</a>
     <nav>
+      <a href="/trips">Походы</a>
       {{if .User}}
         <a href="/me">{{.User.Name}}</a>
         <form method="post" action="/logout" class="inline">
@@ -28,3 +29,18 @@
   </main>
 </body>
 </html>
+
+{{/* Карточка похода в списках: главная, каталог, профиль. */}}
+{{define "trip_card"}}
+<a class="trip-card" href="/trips/{{.ID}}">
+  <span class="badge {{.Status}}">{{.Status.Label}}</span>
+  <h3>{{.Title}}</h3>
+  <p class="muted">{{.Region}} · {{dateRange .StartDate .EndDate}}</p>
+  <p class="meta">
+    <span>{{.Difficulty.Label}}</span>
+    <span>{{.Days}} {{plural .Days "день" "дня" "дней"}}</span>
+    <span>{{.Capacity}} {{plural .Capacity "место" "места" "мест"}}</span>
+    <span>{{money .Fee}}</span>
+  </p>
+</a>
+{{end}}

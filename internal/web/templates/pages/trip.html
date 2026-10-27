@@ -1,0 +1,43 @@
+{{define "title"}}{{.Data.Trip.Title}}{{end}}
+{{define "content"}}
+{{with .Data.Trip}}
+<article class="trip">
+  <p><a href="/trips">← Все походы</a></p>
+  <span class="badge {{.Status}}">{{.Status.Label}}</span>
+  <h1>{{.Title}}</h1>
+  <p class="lead">{{.Region}} · {{dateRange .StartDate .EndDate}} · {{.Days}} {{plural .Days "день" "дня" "дней"}}</p>
+
+  <dl class="facts card">
+    <div><dt>Сложность</dt><dd>{{.Difficulty.Label}}</dd></div>
+    <div><dt>Мест</dt><dd>{{.Capacity}}</dd></div>
+    <div><dt>Взнос</dt><dd>{{money .Fee}}</dd></div>
+    <div><dt>Организатор</dt><dd>{{.OrganizerName}}</dd></div>
+    {{with .MeetingPoint}}<div><dt>Сбор</dt><dd>{{.}}</dd></div>{{end}}
+  </dl>
+
+  {{with .Description}}<div class="description">{{.}}</div>{{end}}
+
+  {{if eq .Status "open"}}
+  <p class="muted card">Запись на поход появится на следующем этапе.</p>
+  {{end}}
+</article>
+
+{{if $.Data.CanManage}}
+<section class="card manage">
+  <h2>Управление</h2>
+  <div class="actions">
+    {{if .Status.Editable}}<a class="btn ghost" href="/trips/{{.ID}}/edit">Редактировать</a>{{end}}
+    {{range .Status.Next}}
+    <form method="post" action="/trips/{{$.Data.Trip.ID}}/status" class="inline">
+      <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+      <input type="hidden" name="from" value="{{$.Data.Trip.Status}}">
+      <input type="hidden" name="to" value="{{.}}">
+      <button class="btn{{if eq . "cancelled"}} danger{{else if ne . "open"}} ghost{{end}}">{{.Action}}</button>
+    </form>
+    {{end}}
+  </div>
+  {{if eq .Status "draft"}}<p class="muted">Черновик видите только вы. Откройте запись, чтобы поход появился в каталоге.</p>{{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}

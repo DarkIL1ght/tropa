@@ -3,6 +3,15 @@
 <section class="card">
   <h1>{{.User.Name}}</h1>
   <p class="muted">{{.User.Email}} · с нами с {{date .User.CreatedAt}}</p>
-  <p class="muted">Здесь будут ваши походы, взносы и привязка Telegram.</p>
 </section>
+
+<div class="page-head">
+  <h2>Мои походы как организатора</h2>
+  <a class="btn" href="/trips/new">Новый поход</a>
+</div>
+{{with .Data}}
+<div class="grid">{{range .}}{{template "trip_card" .}}{{end}}</div>
+{{else}}
+<p class="muted">Вы ещё не организовали ни одного похода.</p>
+{{end}}
 {{end}}

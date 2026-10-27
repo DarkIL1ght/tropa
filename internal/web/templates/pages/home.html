@@ -3,7 +3,17 @@
 <section class="hero">
   <h1>Походы без хаоса в чатах</h1>
   <p>Tropa сама ведёт запись и лист ожидания, рассаживает по машинам и палаткам, следит за взносами и снаряжением и напоминает в Telegram.</p>
-  {{if not .User}}<a class="btn" href="/register">Начать</a>{{end}}
+  <p class="actions">
+    <a class="btn" href="/trips">Найти поход</a>
+    <a class="btn ghost" href="/trips/new">Организовать свой</a>
+  </p>
 </section>
-<p class="muted">Каталог походов появится на следующем этапе.</p>
+
+<h2>Ближайшие походы</h2>
+{{with .Data.Trips}}
+<div class="grid">{{range .}}{{template "trip_card" .}}{{end}}</div>
+{{if gt $.Data.Total (len .)}}<p><a href="/trips">Все походы ({{$.Data.Total}}) →</a></p>{{end}}
+{{else}}
+<p class="muted">Пока ни одного открытого похода. <a href="/trips/new">Создайте первый</a>.</p>
+{{end}}
 {{end}}
