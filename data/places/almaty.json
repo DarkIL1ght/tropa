@@ -1,0 +1,202 @@
+[
+  {
+    "slug": "medeu",
+    "name": "Медеу",
+    "category": "active",
+    "kind": "rink",
+    "lat": 43.15718, "lon": 77.05941,
+    "area": "almaty",
+    "address": "ул. Керей-Жанибек хандар, 465",
+    "description": "Высокогорный каток в урочище Медеу. Зимой — массовое катание под открытым небом, в любое время года — прогулки и старт маршрутов к плотине и Шымбулаку.",
+    "season": "winter",
+    "source": "osm", "osm_ref": "way/171504564"
+  },
+  {
+    "slug": "shymbulak",
+    "name": "Шымбулак",
+    "category": "active",
+    "kind": "ski",
+    "lat": 43.12300, "lon": 77.09267,
+    "area": "almaty",
+    "description": "Горнолыжный курорт над Медеу. Зимой — склоны, летом — канатная дорога к Талгарскому перевалу ради видов и прогулок.",
+    "source": "osm", "osm_ref": "way/1254871130"
+  },
+  {
+    "slug": "kok-tobe",
+    "name": "Кок-Тобе",
+    "category": "nature",
+    "kind": "viewpoint",
+    "lat": 43.23310, "lon": 76.97553,
+    "area": "almaty",
+    "description": "Гора со смотровой площадкой над городом. Наверх — канатная дорога из центра, пешком или на машине. Вечером виден весь ночной город.",
+    "source": "osm", "osm_ref": "node/1826331904"
+  },
+  {
+    "slug": "big-almaty-lake",
+    "name": "Большое Алматинское озеро",
+    "category": "nature",
+    "kind": "lake",
+    "lat": 43.05103, "lon": 76.98539,
+    "area": "almaty",
+    "description": "Горное озеро бирюзового цвета в ущелье Большой Алматинки. Купаться нельзя — это источник питьевой воды; едут ради видов.",
+    "free": true,
+    "source": "osm", "osm_ref": "relation/3427772"
+  },
+  {
+    "slug": "kok-zhailau",
+    "name": "Кок-Жайляу",
+    "category": "nature",
+    "kind": "trail",
+    "lat": 43.13980, "lon": 76.99604,
+    "area": "almaty",
+    "description": "Плато между ущельями Большой и Малой Алматинки — одна из самых популярных пеших прогулок у города. Маршрут на полдня.",
+    "free": true,
+    "source": "osm", "osm_ref": "way/1236186565"
+  },
+  {
+    "slug": "gorelnik",
+    "name": "Пик Горельник",
+    "category": "nature",
+    "kind": "peak",
+    "lat": 43.03658, "lon": 77.05902,
+    "area": "almaty",
+    "description": "Вершина над ущельем Горельник в верховьях Малой Алматинки. Маршрут для тех, кто уже ходил в горы.",
+    "free": true,
+    "source": "osm", "osm_ref": "node/5308277250"
+  },
+  {
+    "slug": "butakovka-waterfall",
+    "name": "Бутаковский водопад",
+    "category": "nature",
+    "kind": "waterfall",
+    "lat": 43.17231, "lon": 77.11401,
+    "area": "almaty",
+    "description": "Водопад в Бутаковском ущелье. Короткая прогулка вдоль реки — подходит для лёгкого выхода с друзьями.",
+    "free": true,
+    "source": "osm", "osm_ref": "node/1843570839"
+  },
+  {
+    "slug": "alma-arasan",
+    "name": "Алма-Арасан",
+    "category": "nature",
+    "kind": "gorge",
+    "lat": 43.08881, "lon": 76.90988,
+    "area": "almaty",
+    "description": "Ущелье Проходная (Алма-Арасан) с горячими источниками и тропами вдоль реки.",
+    "free": true,
+    "source": "osm", "osm_ref": "node/3309197841"
+  },
+  {
+    "slug": "botanical-garden",
+    "name": "Главный ботанический сад",
+    "category": "nature",
+    "kind": "garden",
+    "lat": 43.21944, "lon": 76.91445,
+    "area": "almaty",
+    "description": "Большой ботанический сад в городе: аллеи, пруды, оранжерея. Спокойная прогулка на пару часов.",
+    "source": "osm", "osm_ref": "way/307056816"
+  },
+  {
+    "slug": "terrenkur",
+    "name": "Терренкур",
+    "category": "nature",
+    "kind": "park",
+    "lat": 43.23431, "lon": 76.96101,
+    "area": "almaty",
+    "description": "Прогулочная зона вдоль реки Есентай (Весновка): дорожки для пеших и велопрогулок через несколько районов.",
+    "free": true,
+    "source": "osm", "osm_ref": "relation/18087281"
+  },
+  {
+    "slug": "panfilov-park",
+    "name": "Парк имени 28 гвардейцев-панфиловцев",
+    "category": "nature",
+    "kind": "park",
+    "lat": 43.25883, "lon": 76.95314,
+    "area": "almaty",
+    "description": "Старый парк в центре с Вознесенским собором и мемориалом. Рядом — Зелёный базар и пешеходные улицы.",
+    "free": true,
+    "source": "osm", "osm_ref": "way/208493040"
+  },
+  {
+    "slug": "central-park",
+    "name": "Центральный парк культуры и отдыха",
+    "category": "nature",
+    "kind": "park",
+    "lat": 43.26165, "lon": 76.96927,
+    "area": "almaty",
+    "description": "Большой городской парк: аллеи, пруд, аттракционы, зоопарк рядом. Хорош для прогулки компанией в любое время года.",
+    "free": true,
+    "source": "osm", "osm_ref": "way/232715414"
+  },
+  {
+    "slug": "first-president-park",
+    "name": "Парк Первого Президента",
+    "category": "nature",
+    "kind": "park",
+    "lat": 43.18642, "lon": 76.88680,
+    "area": "almaty",
+    "description": "Просторный парк у подножия гор с фонтанами и видом на хребет.",
+    "free": true,
+    "source": "osm", "osm_ref": "way/213918548"
+  },
+  {
+    "slug": "gandhi-park",
+    "name": "Парк Ганди",
+    "category": "nature",
+    "kind": "park",
+    "lat": 43.24375, "lon": 76.89643,
+    "area": "almaty",
+    "description": "Небольшой зелёный парк для прогулки рядом с домом.",
+    "free": true,
+    "source": "osm", "osm_ref": "way/38566721"
+  },
+  {
+    "slug": "green-bazaar",
+    "name": "Зелёный базар",
+    "category": "culture",
+    "kind": "landmark",
+    "lat": 43.26368, "lon": 76.95520,
+    "area": "almaty",
+    "address": "пр. Жибек Жолы, 53",
+    "description": "Главный рынок города: сухофрукты, специи, местная еда. Тепло даже зимой.",
+    "indoor": true,
+    "source": "osm", "osm_ref": "relation/20040804"
+  },
+  {
+    "slug": "kasteev-museum",
+    "name": "Музей искусств имени Кастеева",
+    "category": "culture",
+    "kind": "museum",
+    "lat": 43.23564, "lon": 76.91949,
+    "area": "almaty",
+    "address": "ул. Сатпаева, 22/1",
+    "description": "Крупнейший художественный музей Казахстана: казахское, русское и западное искусство.",
+    "indoor": true,
+    "source": "osm", "osm_ref": "relation/418680"
+  },
+  {
+    "slug": "central-state-museum",
+    "name": "Центральный государственный музей",
+    "category": "culture",
+    "kind": "museum",
+    "lat": 43.23591, "lon": 76.95072,
+    "area": "almaty",
+    "address": "мкр. Самал-1, 44",
+    "description": "Музей истории Казахстана: от древности до наших дней, этнография, археология.",
+    "indoor": true,
+    "source": "osm", "osm_ref": "way/444574821"
+  },
+  {
+    "slug": "abai-opera-theatre",
+    "name": "Театр оперы и балета имени Абая",
+    "category": "culture",
+    "kind": "theatre",
+    "lat": 43.24865, "lon": 76.94579,
+    "area": "almaty",
+    "address": "ул. Кабанбай батыра, 110",
+    "description": "Главный оперный театр страны: опера и балет в историческом здании.",
+    "indoor": true,
+    "source": "osm", "osm_ref": "relation/6609239"
+  }
+]

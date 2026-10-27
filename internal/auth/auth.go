@@ -165,6 +165,21 @@ func (s *Service) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
+// SetRole меняет роль пользователя по email (команда make-admin).
+func (s *Service) SetRole(ctx context.Context, email, role string) error {
+	if role != "user" && role != "admin" {
+		return ErrInvalidInput
+	}
+	tag, err := s.DB.Exec(ctx, `UPDATE users SET role = $2 WHERE lower(email) = lower($1)`, strings.TrimSpace(email), role)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("пользователь %s не найден — сначала зарегистрируйтесь на сайте", email)
+	}
+	return nil
+}
+
 // PurgeExpired удаляет просроченные сессии; вызывается фоново.
 func (s *Service) PurgeExpired(ctx context.Context) (int64, error) {
 	tag, err := s.DB.Exec(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, s.Now())

@@ -102,3 +102,24 @@ func TestRegisterLoginSession(t *testing.T) {
 		t.Fatalf("после выхода: %v", err)
 	}
 }
+
+func TestSetRole(t *testing.T) {
+	ctx := context.Background()
+	svc := New(storetest.New(t))
+	if _, err := svc.Register(ctx, "boss@tropa.kz", "Админ", "password123"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetRole(ctx, "BOSS@tropa.kz", "admin"); err != nil {
+		t.Fatal(err)
+	}
+	u, err := svc.Authenticate(ctx, "boss@tropa.kz", "password123")
+	if err != nil || !u.IsAdmin() {
+		t.Fatalf("роль не выдана: %+v %v", u, err)
+	}
+	if err := svc.SetRole(ctx, "nobody@tropa.kz", "admin"); err == nil {
+		t.Fatal("несуществующий пользователь")
+	}
+	if err := svc.SetRole(ctx, "boss@tropa.kz", "god"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("неизвестная роль: %v", err)
+	}
+}

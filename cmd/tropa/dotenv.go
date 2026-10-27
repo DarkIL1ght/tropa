@@ -57,3 +57,18 @@ func loadDotEnv(path string) error {
 	}
 	return sc.Err()
 }
+
+// moduleRoot — ближайшая вверх папка с go.mod, или dir, если её нет
+// (бинарник запущен вне исходников).
+func moduleRoot(dir string) string {
+	for d := dir; ; {
+		if _, err := os.Stat(filepath.Join(d, "go.mod")); err == nil {
+			return d
+		}
+		parent := filepath.Dir(d)
+		if parent == d {
+			return dir
+		}
+		d = parent
+	}
+}

@@ -1,0 +1,64 @@
+[
+  {
+    "slug": "furmanov-peak",
+    "name": "Пик Фурманова",
+    "category": "nature",
+    "kind": "peak",
+    "lat": 43.14990, "lon": 77.11567,
+    "area": "region",
+    "description": "Вершина над Медеу и Бутаковкой — классический однодневный подъём с видом на город.",
+    "free": true,
+    "source": "osm", "osm_ref": "node/3718134916"
+  },
+  {
+    "slug": "charyn-canyon",
+    "name": "Чарынский каньон",
+    "category": "nature",
+    "kind": "canyon",
+    "lat": 43.32500, "lon": 79.05858,
+    "area": "region",
+    "description": "Каньон реки Чарын с Долиной замков. Поездка на целый день, лучше с ночёвкой.",
+    "source": "osm", "osm_ref": "way/22722438"
+  },
+  {
+    "slug": "kaindy-lake",
+    "name": "Озеро Каинды",
+    "category": "nature",
+    "kind": "lake",
+    "lat": 42.98456, "lon": 78.46599,
+    "area": "region",
+    "description": "Озеро с затопленным еловым лесом. Часто совмещают с Кольсайскими озёрами в одну поездку на 2–3 дня.",
+    "source": "osm", "osm_ref": "way/60961015"
+  },
+  {
+    "slug": "issyk-lake",
+    "name": "Озеро Иссык",
+    "category": "nature",
+    "kind": "lake",
+    "lat": 43.25281, "lon": 77.48594,
+    "area": "region",
+    "description": "Горное озеро в Иссыкском ущелье, около часа езды от города.",
+    "source": "osm", "osm_ref": "relation/21793235"
+  },
+  {
+    "slug": "medvezhiy-waterfall",
+    "name": "Медвежий водопад",
+    "category": "nature",
+    "kind": "waterfall",
+    "lat": 43.28144, "lon": 77.71544,
+    "area": "region",
+    "description": "Водопад в Тургеньском ущелье — одном из самых красивых ущелий рядом с Алматы.",
+    "source": "osm", "osm_ref": "node/1843530729"
+  },
+  {
+    "slug": "kapchagay-reservoir",
+    "name": "Капчагайское водохранилище",
+    "category": "nature",
+    "kind": "lake",
+    "lat": 43.82866, "lon": 77.60879,
+    "area": "region",
+    "description": "Большое водохранилище у Конаева: пляжи и отдых у воды летом.",
+    "season": "summer",
+    "source": "osm", "osm_ref": "relation/146505"
+  }
+]

@@ -1,7 +1,9 @@
-// Tropa — платформа для организации походов.
+// Tropa — карта мест Алматы и области, куда сходить с друзьями, и встречи на ней.
 //
-//	tropa serve    — веб-сервер (миграции применяются при старте)
-//	tropa migrate  — только применить миграции
+//	tropa serve               — веб-сервер (миграции применяются при старте)
+//	tropa migrate             — только применить миграции
+//	tropa seed [папка]        — загрузить места из data/places/*.json (идемпотентно)
+//	tropa make-admin <email>  — выдать роль админа зарегистрированному пользователю
 //
 // Настройки — переменные окружения или файл .env в корне проекта
 // (образец — .env.example; заданные в окружении важнее файла):
@@ -19,12 +21,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/places"
 	"tropa/internal/store"
 	"tropa/internal/trips"
 	"tropa/internal/web"
@@ -54,8 +58,25 @@ func main() {
 		err = serve(ctx, log)
 	case "migrate":
 		err = withDB(ctx, func(pool *pgxpool.Pool) error { return migrate(ctx, log, pool) })
+	case "seed":
+		err = seed(ctx, log, os.Args[2:])
+	case "make-admin":
+		if len(os.Args) != 3 {
+			err = errors.New("использование: tropa make-admin <email>")
+			break
+		}
+		err = withDB(ctx, func(pool *pgxpool.Pool) error {
+			if err := migrate(ctx, log, pool); err != nil {
+				return err
+			}
+			if err := auth.New(pool).SetRole(ctx, os.Args[2], "admin"); err != nil {
+				return err
+			}
+			log.Info("роль админа выдана", "email", os.Args[2])
+			return nil
+		})
 	default:
-		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate)", cmd)
+		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate, seed, make-admin)", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
@@ -75,6 +96,32 @@ func withDB(ctx context.Context, fn func(*pgxpool.Pool) error) error {
 	}
 	defer pool.Close()
 	return fn(pool)
+}
+
+// seed загружает места из папки (по умолчанию data/places в корне проекта).
+// Сначала проверяются все файлы, потом всё пишется одной транзакцией.
+func seed(ctx context.Context, log *slog.Logger, args []string) error {
+	dir := ""
+	if len(args) > 0 {
+		dir = args[0]
+	} else if wd, err := os.Getwd(); err == nil {
+		dir = filepath.Join(moduleRoot(wd), "data", "places")
+	}
+	list, err := places.LoadSeed(os.DirFS(dir))
+	if err != nil {
+		return fmt.Errorf("%s: %w", dir, err)
+	}
+	return withDB(ctx, func(pool *pgxpool.Pool) error {
+		if err := migrate(ctx, log, pool); err != nil {
+			return err
+		}
+		st, err := places.New(pool).Seed(ctx, list)
+		if err != nil {
+			return err
+		}
+		log.Info("места загружены", "dir", dir, "total", len(list), "result", st.String())
+		return nil
+	})
 }
 
 func migrate(ctx context.Context, log *slog.Logger, pool *pgxpool.Pool) error {
