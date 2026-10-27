@@ -105,7 +105,8 @@ func TestAccountFlow(t *testing.T) {
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/me" {
 		t.Fatalf("вход: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	resp = c.post("/login", "/login", url.Values{"email": {"a@b.kz"}, "password": {"wrong-pass"}})
+	// неверный пароль — с другого браузера, гостем
+	resp = newClient(t, ts.URL).post("/login", "/login", url.Values{"email": {"a@b.kz"}, "password": {"wrong-pass"}})
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("неверный пароль: %d", resp.StatusCode)
 	}
