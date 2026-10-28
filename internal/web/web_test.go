@@ -70,12 +70,16 @@ func newTestServer(t *testing.T) *httptest.Server {
 }
 
 // newTestEnv — сервер и его база (для тестов, которым нужно засеять данные).
-func newTestEnv(t *testing.T) (*httptest.Server, *pgxpool.Pool) {
+// setup меняет сервер до запуска: подставить погоду, часы.
+func newTestEnv(t *testing.T, setup ...func(*Server)) (*httptest.Server, *pgxpool.Pool) {
 	db := storetest.New(t)
 	srv, err := New(Config{}, Services{Auth: auth.New(db), Trips: trips.New(db), Places: places.New(db)},
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
+	}
+	for _, f := range setup {
+		f(srv)
 	}
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)

@@ -14,6 +14,7 @@
 //	DATABASE_URL    postgres://user:pass@host:5432/db (обязательно)
 //	ADDR            адрес сервера, по умолчанию 127.0.0.1:8080
 //	SECURE_COOKIES  1 — cookie только по HTTPS (за прокси с TLS)
+//	WEATHER_URL     API погоды, по умолчанию Open-Meteo; off — без плашки погоды
 package main
 
 import (
@@ -37,6 +38,7 @@ import (
 	"tropa/internal/places"
 	"tropa/internal/store"
 	"tropa/internal/trips"
+	"tropa/internal/weather"
 	"tropa/internal/web"
 )
 
@@ -216,7 +218,7 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		}
 		authSvc := auth.New(pool)
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"},
-			web.Services{Auth: authSvc, Trips: trips.New(pool), Places: places.New(pool)}, log)
+			web.Services{Auth: authSvc, Trips: trips.New(pool), Places: places.New(pool), Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err
 		}
@@ -269,4 +271,18 @@ func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 		case <-t.C:
 		}
 	}
+}
+
+// almatyWeather — погода для центра рамки города (Open-Meteo считает по сетке,
+// точная точка не нужна). baseURL "off" — без погоды, пусто — Open-Meteo.
+func almatyWeather(baseURL string) *weather.Client {
+	if baseURL == "off" {
+		return nil
+	}
+	b := places.CityBBox
+	c := weather.New((b.South+b.North)/2, (b.West+b.East)/2)
+	if baseURL != "" {
+		c.BaseURL = baseURL
+	}
+	return c
 }

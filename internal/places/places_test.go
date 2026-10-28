@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"tropa/internal/store/storetest"
 )
@@ -254,6 +255,25 @@ func TestBoundaries(t *testing.T) {
 	} {
 		if got := AreaOf(c.lat, c.lon); got != c.want {
 			t.Errorf("%s: %q, ждали %q", name, got, c.want)
+		}
+	}
+}
+
+func TestOffSeason(t *testing.T) {
+	summer := &Place{Season: "summer"}
+	winter := &Place{Season: "winter"}
+	indoorWinter := &Place{Season: "winter", Indoor: true}
+	allYear := &Place{Season: "all_year"}
+	for m := time.January; m <= time.December; m++ {
+		cold := m >= time.November || m <= time.March
+		if got := summer.OffSeason(m); got != cold {
+			t.Errorf("летнее место, %v: %v", m, got)
+		}
+		if got := winter.OffSeason(m); got != (m >= time.May && m <= time.October) {
+			t.Errorf("зимнее место, %v: %v", m, got)
+		}
+		if indoorWinter.OffSeason(m) || allYear.OffSeason(m) {
+			t.Errorf("%v: у мест в помещении и круглогодичных сезона нет", m)
 		}
 	}
 }

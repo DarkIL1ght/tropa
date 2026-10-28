@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -68,6 +69,22 @@ type Season string
 var seasonLabels = map[Season]string{"all_year": "Круглый год", "summer": "Летом", "winter": "Зимой"}
 
 func (s Season) Label() string { return seasonLabels[s] }
+
+// OffSeason — не сезон ли для места в месяц m (по Алматы): летние места на улице
+// закрыты с ноября по март, зимние (катки, склоны) — с мая по октябрь.
+// У мест в помещении сезона нет.
+func (p *Place) OffSeason(m time.Month) bool {
+	if p.Indoor {
+		return false
+	}
+	switch p.Season {
+	case "summer":
+		return m >= time.November || m <= time.March
+	case "winter":
+		return m >= time.May && m <= time.October
+	}
+	return false
+}
 
 // BBox — прямоугольник координат.
 type BBox struct{ South, West, North, East float64 }

@@ -14,6 +14,7 @@ import (
 	"tropa/internal/auth"
 	"tropa/internal/places"
 	"tropa/internal/trips"
+	"tropa/internal/weather"
 )
 
 //go:embed templates static
@@ -29,19 +30,24 @@ type Services struct {
 	Auth   *auth.Service
 	Trips  *trips.Service
 	Places *places.Service
+	// Weather — погода для плашки на карте; nil — без погоды.
+	Weather *weather.Client
 }
 
 type Server struct {
-	cfg    Config
-	auth   *auth.Service
-	trips  *trips.Service
-	places *places.Service
-	log    *slog.Logger
-	pages  map[string]*template.Template
+	cfg     Config
+	auth    *auth.Service
+	trips   *trips.Service
+	places  *places.Service
+	weather *weather.Client
+	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
+	now   func() time.Time
+	log   *slog.Logger
+	pages map[string]*template.Template
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, trips: svc.Trips, places: svc.Places, log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, trips: svc.Trips, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}

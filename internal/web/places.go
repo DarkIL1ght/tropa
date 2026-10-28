@@ -7,18 +7,33 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"tropa/internal/places"
+	"tropa/internal/trips"
+	"tropa/internal/weather"
 )
 
 type mapView struct {
 	Categories []places.Category
+	// Weather — непогода сейчас: есть повод позвать в тепло. nil — погода
+	// хорошая или неизвестна, плашки нет.
+	Weather *weather.Weather
 }
 
 // mapPage — главная: карта мест во весь экран. Сами места грузит
 // map.js через /api/places, чтобы карта обновлялась при сдвиге без перезагрузки.
 func (s *Server) mapPage(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "map.html", mapView{Categories: places.Categories})
+	v := mapView{Categories: places.Categories}
+	if s.weather != nil {
+		// Ошибку только пишем в лог: без погоды карта работает как обычно.
+		if wt, err := s.weather.Current(r.Context()); err != nil {
+			s.log.Warn("погода", "err", err)
+		} else if wt.Cold() {
+			v.Weather = &wt
+		}
+	}
+	s.render(w, r, http.StatusOK, "map.html", v)
 }
 
 // parsePlaceQuery читает фильтр карты из query-параметров:
@@ -84,14 +99,15 @@ type geometry struct {
 }
 
 type placeSummary struct {
-	Slug     string `json:"slug"`
-	Name     string `json:"name"`
-	Category string `json:"category"`
-	Kind     string `json:"kind"` // подпись вида, по-русски
-	Indoor   bool   `json:"indoor"`
-	Free     bool   `json:"free"`
-	Season   string `json:"season,omitempty"` // пусто — круглый год
-	URL      string `json:"url"`
+	Slug      string `json:"slug"`
+	Name      string `json:"name"`
+	Category  string `json:"category"`
+	Kind      string `json:"kind"` // подпись вида, по-русски
+	Indoor    bool   `json:"indoor"`
+	Free      bool   `json:"free"`
+	Season    string `json:"season,omitempty"`     // пусто — круглый год
+	OffSeason bool   `json:"off_season,omitempty"` // сейчас не сезон
+	URL       string `json:"url"`
 }
 
 func (s *Server) apiPlaces(w http.ResponseWriter, r *http.Request) {
@@ -106,6 +122,7 @@ func (s *Server) apiPlaces(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "ошибка сервера"})
 		return
 	}
+	month := s.month()
 	fc := featureCollection{Type: "FeatureCollection", Features: make([]feature, 0, len(list))}
 	for _, p := range list {
 		season := ""
@@ -117,7 +134,8 @@ func (s *Server) apiPlaces(w http.ResponseWriter, r *http.Request) {
 			Geometry: geometry{Type: "Point", Coordinates: [2]float64{p.Lon, p.Lat}},
 			Properties: placeSummary{
 				Slug: p.Slug, Name: p.Name, Category: string(p.Category), Kind: p.Kind.Label(),
-				Indoor: p.Indoor, Free: p.Free, Season: season, URL: "/places/" + p.Slug,
+				Indoor: p.Indoor, Free: p.Free, Season: season, OffSeason: p.OffSeason(month),
+				URL: "/places/" + p.Slug,
 			},
 		})
 	}
@@ -132,8 +150,9 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 type placeView struct {
-	Place  *places.Place
-	OSMURL string
+	Place     *places.Place
+	OSMURL    string
+	OffSeason bool
 }
 
 func (s *Server) showPlace(w http.ResponseWriter, r *http.Request) {
@@ -146,9 +165,12 @@ func (s *Server) showPlace(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	v := placeView{Place: p}
+	v := placeView{Place: p, OffSeason: p.OffSeason(s.month())}
 	if p.OSMRef != "" {
 		v.OSMURL = "https://www.openstreetmap.org/" + p.OSMRef
 	}
 	s.render(w, r, http.StatusOK, "place.html", v)
 }
+
+// month — текущий месяц по Алматы: от него зависит «не сезон».
+func (s *Server) month() time.Month { return s.now().In(trips.Almaty).Month() }

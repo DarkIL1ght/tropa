@@ -101,6 +101,7 @@
     if (props.indoor) meta.push("в помещении");
     if (props.free) meta.push("бесплатно");
     if (props.season) meta.push(props.season.toLowerCase());
+    if (props.off_season) meta.push("сейчас не сезон");
     box.appendChild(el("div", "muted", meta.join(" · ")));
     var a = el("a", null, "Подробнее →");
     a.href = props.url;
@@ -135,7 +136,8 @@
       btn.appendChild(el("span", "pin cat-" + p.category.replace(/[^a-z]/g, "")));
       var text = el("span", "place-text");
       text.appendChild(el("span", "place-name", p.name));
-      text.appendChild(el("span", "muted", p.kind + (p.indoor ? " · в помещении" : "") + (p.free ? " · бесплатно" : "")));
+      text.appendChild(el("span", "muted", p.kind + (p.indoor ? " · в помещении" : "") + (p.free ? " · бесплатно" : "") +
+        (p.off_season ? " · не сезон" : "")));
       btn.appendChild(text);
       btn.addEventListener("click", function () {
         closePanel();
@@ -212,6 +214,16 @@
   indoorBox.addEventListener("change", function () { state.indoor = indoorBox.checked; syncURL(); schedule(0); });
   freeBox.addEventListener("change", function () { state.free = freeBox.checked; syncURL(); schedule(0); });
   qInput.addEventListener("input", function () { state.q = qInput.value.trim(); syncURL(); schedule(300); });
+  // Плашка непогоды: оставляет на карте только места в тепле.
+  var weatherGo = document.getElementById("weather-go");
+  if (weatherGo) {
+    weatherGo.addEventListener("click", function () {
+      state.cats = new Set([weatherGo.dataset.cat]);
+      chips.forEach(function (b) { b.setAttribute("aria-pressed", String(state.cats.has(b.dataset.cat))); });
+      syncURL();
+      schedule(0);
+    });
+  }
   document.getElementById("filters").addEventListener("submit", function (e) { e.preventDefault(); schedule(0); });
 
   function closePanel() {

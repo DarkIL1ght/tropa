@@ -221,3 +221,21 @@ html, body { overflow-x: hidden; }
 }
 @media (max-width: 420px) { .nav-secondary { display: none; } }
 @media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+
+/* Плашка непогоды над картой */
+.weather {
+  position: absolute; z-index: 1000; top: 12px; left: calc(360px + 12px); max-width: calc(100% - 360px - 72px);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  padding: 8px 14px; border-radius: var(--radius); background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); box-shadow: 0 2px 10px rgb(0 0 0 / .2); font-size: 14px;
+}
+.weather-now { font-weight: 600; }
+.weather-go {
+  font: inherit; cursor: pointer; border: 0; padding: 4px 10px; border-radius: 999px;
+  background: var(--cat-indoor); color: #fff;
+}
+.weather-src { font-size: 12px; color: var(--muted); }
+.tags .off-season { border-color: var(--danger); color: var(--danger); }
+@media (max-width: 760px) {
+  .weather { left: 12px; right: 12px; max-width: none; }
+}
