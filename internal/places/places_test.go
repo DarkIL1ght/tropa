@@ -197,10 +197,19 @@ func TestSeedAndSearch(t *testing.T) {
 		}
 		return len(res)
 	}
+	published := 0
+	for _, p := range list {
+		if p.Status == Published {
+			published++
+		}
+	}
+	if published == len(list) {
+		t.Fatal("в seed нет скрытых и черновиков — проверка статусов ничего не проверяет")
+	}
 	all := count(Query{})
 	city := count(Query{BBox: &CityBBox})
-	if all != len(list) || city == 0 || city >= all {
-		t.Fatalf("всего %d, в городе %d, в seed %d", all, city, len(list))
+	if all != published || city == 0 || city >= all {
+		t.Fatalf("всего %d, в городе %d, опубликовано в seed %d", all, city, published)
 	}
 	for _, c := range []struct {
 		name string
