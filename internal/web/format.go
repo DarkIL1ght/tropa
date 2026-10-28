@@ -26,6 +26,22 @@ func ticket(t time.Time) stub {
 	return stub{Day: t.Format("2"), Month: monthsShort[t.Month()-1], Weekday: weekdaysShort[t.Weekday()], Time: t.Format("15:04")}
 }
 
+// hallMax — больше стольких мест схему «зала» не рисуем: она перестаёт читаться.
+const hallMax = 48
+
+// hall — кресла «зала» на странице встречи, true — занято.
+// Без лимита мест и в больших встречах схемы нет (nil).
+func hall(m *meetups.Meetup) []bool {
+	if m.Capacity == 0 || m.Capacity > hallMax {
+		return nil
+	}
+	seats := make([]bool, m.Capacity)
+	for i := range min(m.Going, m.Capacity) {
+		seats[i] = true
+	}
+	return seats
+}
+
 // initial — первая буква имени для аватара-кружка.
 func initial(name string) string {
 	for _, r := range strings.TrimSpace(name) {

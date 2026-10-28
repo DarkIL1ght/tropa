@@ -32,6 +32,14 @@
     <div><dt>Организатор</dt><dd><a href="/u/{{.OrganizerID}}">{{.OrganizerName}}</a></dd></div>
   </dl>
 
+  {{with hall .}}
+  <section class="hall" aria-label="Места">
+    <div class="screen" aria-hidden="true"></div>
+    <ul class="seats" aria-hidden="true">{{range .}}<li class="seat{{if .}} taken{{end}}"></li>{{end}}</ul>
+    <p class="hall-legend"><span class="taken">занято: {{$.Data.Meetup.Going}}</span><span>свободно: {{$.Data.Meetup.Free}}</span>{{with $.Data.Meetup.Waiting}}<span>в очереди: {{.}}</span>{{end}}</p>
+  </section>
+  {{end}}
+
   {{with .Description}}<div class="description">{{.}}</div>{{end}}
 
   <section class="join">
@@ -65,7 +73,7 @@
     {{else if $.User}}
       <form method="post" action="{{.URL}}/join" class="inline">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-        <button class="btn accent">{{if eq .Free 0}}Встать в очередь{{else}}Я иду{{end}}</button>
+        <button class="btn accent">{{if eq .Free 0}}Встать в очередь{{else}}Взять билет{{end}}</button>
       </form>
     {{else}}
       <p><a class="btn accent" href="/login?next={{.URL}}">Войдите, чтобы записаться</a></p>

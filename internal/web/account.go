@@ -17,6 +17,7 @@ var flashText = map[string]string{
 
 	"name_saved":       "Имя сохранено.",
 	"password_changed": "Пароль изменён. На других устройствах нужно войти заново.",
+	"appearance_saved": "Оформление сохранено.",
 
 	"meetup_created":   "Встреча создана. Поделитесь ссылкой с друзьями.",
 	"meetup_saved":     "Изменения сохранены.",

@@ -27,6 +27,19 @@ func TestPlural(t *testing.T) {
 	}
 }
 
+func TestHall(t *testing.T) {
+	if hall(&meetups.Meetup{Going: 3}) != nil || hall(&meetups.Meetup{Capacity: hallMax + 1, Going: 3}) != nil {
+		t.Fatal("без лимита и в большой встрече схемы быть не должно")
+	}
+	seats := hall(&meetups.Meetup{Capacity: 4, Going: 3})
+	if len(seats) != 4 || !seats[0] || !seats[2] || seats[3] {
+		t.Fatalf("схема зала: %v", seats)
+	}
+	if seats := hall(&meetups.Meetup{Capacity: 2, Going: 5}); !seats[0] || !seats[1] {
+		t.Fatalf("переполненный зал: %v", seats)
+	}
+}
+
 // signup регистрирует нового пользователя в своём «браузере».
 func signup(t *testing.T, base, email string) *client {
 	c := newClient(t, base)

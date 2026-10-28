@@ -171,3 +171,25 @@ func TestProfileChanges(t *testing.T) {
 		t.Fatalf("новый пароль: %v", err)
 	}
 }
+
+func TestAppearance(t *testing.T) {
+	ctx := context.Background()
+	svc := New(storetest.New(t))
+	u, err := svc.Register(ctx, "a@tropa.kz", "Дархан", "password123")
+	if err != nil || u.Style != "base" || u.Scheme != "auto" {
+		t.Fatalf("оформление по умолчанию: %+v %v", u, err)
+	}
+	if err := svc.SetAppearance(ctx, u.ID, "neon", "dark"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("неизвестный стиль: %v", err)
+	}
+	if err := svc.SetAppearance(ctx, u.ID, "halloween", "dusk"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("неизвестная тема: %v", err)
+	}
+	if err := svc.SetAppearance(ctx, u.ID, "halloween", "light"); err != nil {
+		t.Fatal(err)
+	}
+	token, _, _ := svc.CreateSession(ctx, u.ID)
+	if got, err := svc.UserBySession(ctx, token); err != nil || got.Style != "halloween" || got.Scheme != "light" {
+		t.Fatalf("оформление в сессии: %+v %v", got, err)
+	}
+}

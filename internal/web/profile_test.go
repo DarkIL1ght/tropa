@@ -109,3 +109,24 @@ func TestPublicProfile(t *testing.T) {
 		}
 	}
 }
+
+func TestAppearanceSettings(t *testing.T) {
+	ts := newTestServer(t)
+	c := signup(t, ts.URL, "a@tropa.kz")
+	if _, body := c.get("/me"); !strings.Contains(body, `data-style="base" data-scheme="auto"`) {
+		t.Fatal("оформление по умолчанию не попало в <html>")
+	}
+	if resp := c.post("/me/settings", "/me/appearance", url.Values{"style": {"neon"}, "scheme": {"dark"}}); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("неизвестный стиль: %d", resp.StatusCode)
+	}
+	if resp := c.post("/me/settings", "/me/appearance", url.Values{"style": {"halloween"}, "scheme": {"dark"}}); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("сохранение оформления: %d", resp.StatusCode)
+	}
+	_, body := c.get("/me/settings")
+	if !strings.Contains(body, `data-style="halloween" data-scheme="dark"`) || !strings.Contains(body, `value="halloween" checked`) {
+		t.Fatal("выбранное оформление не применилось")
+	}
+	if _, body := newClient(t, ts.URL).get("/"); strings.Contains(body, "data-style") {
+		t.Fatal("у гостя не должно быть сохранённого оформления")
+	}
+}

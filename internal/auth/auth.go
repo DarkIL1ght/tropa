@@ -37,6 +37,26 @@ type User struct {
 	Name      string
 	Role      string
 	CreatedAt time.Time
+	// Оформление сайта: стиль (Styles) и тема (Schemes).
+	Style  string
+	Scheme string
+}
+
+// Styles и Schemes — допустимые значения оформления и их подписи (по порядку для формы).
+var (
+	Styles  = []Option{{"base", "Базовый"}, {"halloween", "Хэллоуин"}}
+	Schemes = []Option{{"auto", "Как в системе"}, {"dark", "Тёмная"}, {"light", "Светлая"}}
+)
+
+type Option struct{ Value, Label string }
+
+func validOption(opts []Option, v string) bool {
+	for _, o := range opts {
+		if o.Value == v {
+			return true
+		}
+	}
+	return false
 }
 
 func (u *User) IsAdmin() bool { return u != nil && u.Role == "admin" }
@@ -100,8 +120,8 @@ func (s *Service) Register(ctx context.Context, email, name, password string) (*
 	u := &User{Email: email, Name: name}
 	err = s.DB.QueryRow(ctx,
 		`INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3)
-		 RETURNING id, role, created_at`,
-		email, name, string(hash)).Scan(&u.ID, &u.Role, &u.CreatedAt)
+		 RETURNING id, role, created_at, style, scheme`,
+		email, name, string(hash)).Scan(&u.ID, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 		return nil, ErrEmailTaken
@@ -121,8 +141,8 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*Us
 	u := &User{}
 	var hash string
 	err := s.DB.QueryRow(ctx,
-		`SELECT id, email, name, role, created_at, password_hash FROM users WHERE lower(email) = lower($1)`,
-		strings.TrimSpace(email)).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &hash)
+		`SELECT id, email, name, role, created_at, style, scheme, password_hash FROM users WHERE lower(email) = lower($1)`,
+		strings.TrimSpace(email)).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &hash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
 		return nil, ErrBadLogin
@@ -139,8 +159,8 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*Us
 // UserByID — пользователь по id (для публичного профиля); ErrNoUser, если нет.
 func (s *Service) UserByID(ctx context.Context, id int64) (*User, error) {
 	u := &User{}
-	err := s.DB.QueryRow(ctx, `SELECT id, email, name, role, created_at FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+	err := s.DB.QueryRow(ctx, `SELECT id, email, name, role, created_at, style, scheme FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNoUser
 	}
@@ -154,6 +174,15 @@ func (s *Service) Rename(ctx context.Context, userID int64, name string) error {
 		return ErrInvalidInput
 	}
 	_, err := s.DB.Exec(ctx, `UPDATE users SET name = $2 WHERE id = $1`, userID, name)
+	return err
+}
+
+// SetAppearance сохраняет оформление сайта; неизвестные значения — ErrInvalidInput.
+func (s *Service) SetAppearance(ctx context.Context, userID int64, style, scheme string) error {
+	if !validOption(Styles, style) || !validOption(Schemes, scheme) {
+		return ErrInvalidInput
+	}
+	_, err := s.DB.Exec(ctx, `UPDATE users SET style = $2, scheme = $3 WHERE id = $1`, userID, style, scheme)
 	return err
 }
 
@@ -220,10 +249,10 @@ func (s *Service) UserBySession(ctx context.Context, token string) (*User, error
 	}
 	u := &User{}
 	err := s.DB.QueryRow(ctx,
-		`SELECT u.id, u.email, u.name, u.role, u.created_at
+		`SELECT u.id, u.email, u.name, u.role, u.created_at, u.style, u.scheme
 		   FROM sessions s JOIN users u ON u.id = s.user_id
 		  WHERE s.token_hash = $1 AND s.expires_at > $2`,
-		hashToken(token), s.Now()).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+		hashToken(token), s.Now()).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNoSession
 	}

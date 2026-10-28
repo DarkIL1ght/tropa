@@ -66,6 +66,7 @@ var funcs = template.FuncMap{
 	"plural":  plural,
 	"initial": initial,
 	"ticket":  ticket,
+	"hall":    hall,
 	"lower":   func(s string) string { return strings.ToLower(s) },
 	"add":     func(a, b int) int { return a + b },
 	"sub":     func(a, b int) int { return a - b },
@@ -111,6 +112,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /me/settings", auth.RequireUser(http.HandlerFunc(s.settings)))
 	mux.Handle("POST /me/name", auth.RequireUser(http.HandlerFunc(s.rename)))
 	mux.Handle("POST /me/password", auth.RequireUser(http.HandlerFunc(s.changePassword)))
+	mux.Handle("POST /me/appearance", auth.RequireUser(http.HandlerFunc(s.setAppearance)))
 	mux.HandleFunc("GET /u/{id}", s.showUser)
 
 	mux.HandleFunc("GET /meetups", s.meetupList)

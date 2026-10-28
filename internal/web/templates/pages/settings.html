@@ -9,6 +9,26 @@
 {{end}}
 {{define "content"}}
 {{with .Data}}
+<form method="post" action="/me/appearance" class="card form appearance">
+  <h2>Оформление</h2>
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  <fieldset class="looks">
+    <legend>Стиль</legend>
+    {{range .Styles}}
+    <label class="look look-{{.Value}}"><input type="radio" name="style" value="{{.Value}}"{{if eq .Value $.User.Style}} checked{{end}}>
+      <span class="look-preview" aria-hidden="true"><i></i><i></i><i></i></span>{{.Label}}</label>
+    {{end}}
+  </fieldset>
+  <fieldset class="segmented">
+    <legend>Тема</legend>
+    {{range .Schemes}}
+    <label><input type="radio" name="scheme" value="{{.Value}}"{{if eq .Value $.User.Scheme}} checked{{end}}><span>{{.Label}}</span></label>
+    {{end}}
+  </fieldset>
+  {{with index .Errors "appearance"}}<span class="err">{{.}}</span>{{end}}
+  <button class="btn">Сохранить оформление</button>
+</form>
+
 <form method="post" action="/me/name" class="card form">
   <h2>Имя</h2>
   <input type="hidden" name="csrf_token" value="{{$.CSRF}}">

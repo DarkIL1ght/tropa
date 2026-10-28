@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
+  <!-- «Қошқар мүйіз» (бараний рог): четыре пары рогов вокруг центра, как медальон на сырмаке. Цвет задаёт CSS через mask. -->
+  <defs>
+    <g id="horn" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M100 84V62"/>
+      <path d="M100 62c0-22-14-36-28-32-12 4-12 20 0 24 8 3 14-4 10-10"/>
+      <path d="M100 62c0-22 14-36 28-32 12 4 12 20 0 24-8 3-14-4-10-10"/>
+    </g>
+  </defs>
+  <use xlink:href="#horn"/>
+  <use xlink:href="#horn" transform="rotate(90 100 100)"/>
+  <use xlink:href="#horn" transform="rotate(180 100 100)"/>
+  <use xlink:href="#horn" transform="rotate(270 100 100)"/>
+  <path d="M100 78l22 22-22 22-22-22Z" fill="#000"/>
+</svg>

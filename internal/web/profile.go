@@ -13,15 +13,21 @@ import (
 type settingsView struct {
 	Name   string
 	Errors map[string]string
+	// Варианты оформления для формы; текущие значения — в $.User.
+	Styles, Schemes []auth.Option
+}
+
+func newSettingsView(name string) settingsView {
+	return settingsView{Name: name, Errors: map[string]string{}, Styles: auth.Styles, Schemes: auth.Schemes}
 }
 
 func (s *Server) settings(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, http.StatusOK, "settings.html", settingsView{Name: auth.CurrentUser(r.Context()).Name})
+	s.render(w, r, http.StatusOK, "settings.html", newSettingsView(auth.CurrentUser(r.Context()).Name))
 }
 
 func (s *Server) rename(w http.ResponseWriter, r *http.Request) {
 	u := auth.CurrentUser(r.Context())
-	v := settingsView{Name: strings.TrimSpace(r.PostFormValue("name")), Errors: map[string]string{}}
+	v := newSettingsView(strings.TrimSpace(r.PostFormValue("name")))
 	if e := auth.ValidateName(v.Name); e != "" {
 		v.Errors["name"] = e
 		s.render(w, r, http.StatusUnprocessableEntity, "settings.html", v)
@@ -37,7 +43,7 @@ func (s *Server) rename(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 	u := auth.CurrentUser(r.Context())
-	v := settingsView{Name: u.Name, Errors: map[string]string{}}
+	v := newSettingsView(u.Name)
 	password := r.PostFormValue("password")
 	if e := auth.ValidatePassword(password); e != "" {
 		v.Errors["password"] = e
@@ -64,6 +70,24 @@ func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	flash(w, "password_changed")
+	http.Redirect(w, r, "/me/settings", http.StatusSeeOther)
+}
+
+// setAppearance сохраняет стиль и тему сайта.
+func (s *Server) setAppearance(w http.ResponseWriter, r *http.Request) {
+	u := auth.CurrentUser(r.Context())
+	err := s.auth.SetAppearance(r.Context(), u.ID, r.PostFormValue("style"), r.PostFormValue("scheme"))
+	if errors.Is(err, auth.ErrInvalidInput) {
+		v := newSettingsView(u.Name)
+		v.Errors["appearance"] = "Выберите стиль и тему из списка"
+		s.render(w, r, http.StatusUnprocessableEntity, "settings.html", v)
+		return
+	}
+	if err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+	flash(w, "appearance_saved")
 	http.Redirect(w, r, "/me/settings", http.StatusSeeOther)
 }
 
