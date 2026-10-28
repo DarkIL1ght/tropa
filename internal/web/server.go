@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"tropa/internal/auth"
@@ -65,6 +66,7 @@ var funcs = template.FuncMap{
 	"plural":  plural,
 	"initial": initial,
 	"ticket":  ticket,
+	"lower":   func(s string) string { return strings.ToLower(s) },
 	"add":     func(a, b int) int { return a + b },
 	"sub":     func(a, b int) int { return a - b },
 }

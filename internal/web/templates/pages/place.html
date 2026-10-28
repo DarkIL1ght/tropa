@@ -7,9 +7,8 @@
 <section class="masthead cat-{{.Category}}">
   <div class="masthead-in">
     <a class="back" href="/">← К карте</a>
-    <p class="kicker"><span class="pin cat-{{.Category}}"></span>{{.Category.Label}}, {{.Kind.Label}}</p>
     <h1>{{.Name}}</h1>
-    {{with .Address}}<p class="lead">{{.}}</p>{{end}}
+    <p class="lead">{{.Kind.Label}}, {{.Category.Label | lower}}{{with .Address}}. {{.}}{{end}}</p>
   </div>
 </section>
 {{end}}
