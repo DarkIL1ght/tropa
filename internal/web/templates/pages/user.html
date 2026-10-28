@@ -1,0 +1,21 @@
+{{define "title"}}{{.Data.Person.Name}}{{end}}
+{{define "content"}}
+{{with .Data}}
+<section class="card">
+  <h1>{{.Person.Name}}</h1>
+  <p class="muted">С нами с {{date .Person.CreatedAt}}</p>
+  <dl class="facts">
+    <div><dt>Собрано встреч</dt><dd>{{.Stats.Organized}}</dd></div>
+    <div><dt>Посещено встреч</dt><dd>{{.Stats.Attended}}</dd></div>
+  </dl>
+  {{if .Own}}<p class="muted small">Так вашу страницу видят другие. Email и встречи «для друзей» здесь не показываются. <a href="/me/settings">Изменить имя</a></p>{{end}}
+</section>
+
+<h2>Ближайшие встречи</h2>
+{{with .Upcoming}}
+<div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+{{else}}
+<p class="muted">Предстоящих открытых встреч нет.</p>
+{{end}}
+{{end}}
+{{end}}

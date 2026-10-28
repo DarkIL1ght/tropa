@@ -378,10 +378,28 @@ func TestListsAndVisibility(t *testing.T) {
 		t.Fatalf("я участвую: %+v %v", joined, err)
 	}
 
+	// на публичной странице — только открытые, без «для друзей» и отменённых
+	if list, err := e.s.PublicByOrganizer(ctx, org.ID); err != nil || len(list) != 1 || list[0].ID != pub.ID {
+		t.Fatalf("публичные встречи организатора: %v %v", list, err)
+	}
+	if st, err := e.s.Stats(ctx, org.ID); err != nil || st != (Stats{Organized: 2}) {
+		t.Fatalf("счётчики организатора: %+v %v", st, err)
+	}
+	if st, _ := e.s.Stats(ctx, guest.ID); st != (Stats{}) {
+		t.Fatalf("будущая встреча засчитана как посещённая: %+v", st)
+	}
+
 	// прошедшие пропадают из списка и с карты
 	*e.now = pub.StartsAt
 	if page, _ := e.s.List(ctx, Filter{Page: 1}); page.Total != 0 {
 		t.Fatalf("прошедшая в списке: %d", page.Total)
+	}
+	*e.now = friends.StartsAt.Add(time.Minute)
+	if list, _ := e.s.PublicByOrganizer(ctx, org.ID); len(list) != 0 {
+		t.Fatalf("прошедшая на публичной странице: %d", len(list))
+	}
+	if st, _ := e.s.Stats(ctx, guest.ID); st != (Stats{Attended: 1}) {
+		t.Fatalf("посещённые: %+v", st)
 	}
 }
 

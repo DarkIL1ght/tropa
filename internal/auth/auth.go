@@ -27,6 +27,8 @@ var (
 	ErrBadLogin     = errors.New("неверный email или пароль")
 	ErrNoSession    = errors.New("сессия не найдена")
 	ErrInvalidInput = errors.New("неверные данные")
+	ErrNoUser       = errors.New("пользователь не найден")
+	ErrBadPassword  = errors.New("неверный текущий пароль")
 )
 
 type User struct {
@@ -56,16 +58,32 @@ func ValidateRegistration(email, name, password string) map[string]string {
 	if a, err := mail.ParseAddress(email); err != nil || a.Address != email {
 		errs["email"] = "Введите корректный email"
 	}
-	if n := utf8.RuneCountInString(strings.TrimSpace(name)); n < 2 || n > 60 {
-		errs["name"] = "Имя — от 2 до 60 символов"
+	if e := ValidateName(name); e != "" {
+		errs["name"] = e
 	}
-	if n := utf8.RuneCountInString(password); n < 8 {
-		errs["password"] = "Пароль — не короче 8 символов"
-	} else if len(password) > 72 {
-		// bcrypt молча обрезает всё длиннее 72 байт
-		errs["password"] = "Пароль слишком длинный"
+	if e := ValidatePassword(password); e != "" {
+		errs["password"] = e
 	}
 	return errs
+}
+
+// ValidateName — текст ошибки для имени или пустая строка.
+func ValidateName(name string) string {
+	if n := utf8.RuneCountInString(strings.TrimSpace(name)); n < 2 || n > 60 {
+		return "Имя — от 2 до 60 символов"
+	}
+	return ""
+}
+
+// ValidatePassword — текст ошибки для нового пароля или пустая строка.
+func ValidatePassword(password string) string {
+	if n := utf8.RuneCountInString(password); n < 8 {
+		return "Пароль — не короче 8 символов"
+	} else if len(password) > 72 {
+		// bcrypt молча обрезает всё длиннее 72 байт
+		return "Пароль слишком длинный"
+	}
+	return ""
 }
 
 // Register создаёт пользователя. Поля должны пройти ValidateRegistration.
@@ -116,6 +134,59 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*Us
 		return nil, ErrBadLogin
 	}
 	return u, nil
+}
+
+// UserByID — пользователь по id (для публичного профиля); ErrNoUser, если нет.
+func (s *Service) UserByID(ctx context.Context, id int64) (*User, error) {
+	u := &User{}
+	err := s.DB.QueryRow(ctx, `SELECT id, email, name, role, created_at FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNoUser
+	}
+	return u, err
+}
+
+// Rename меняет имя; оно должно пройти ValidateName.
+func (s *Service) Rename(ctx context.Context, userID int64, name string) error {
+	name = strings.TrimSpace(name)
+	if ValidateName(name) != "" {
+		return ErrInvalidInput
+	}
+	_, err := s.DB.Exec(ctx, `UPDATE users SET name = $2 WHERE id = $1`, userID, name)
+	return err
+}
+
+// ChangePassword меняет пароль, если current совпадает с нынешним, и закрывает
+// все сессии пользователя: украденная cookie после смены пароля не работает.
+// Вызывающий открывает текущему браузеру новую сессию.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, current, password string) error {
+	if ValidatePassword(password) != "" {
+		return ErrInvalidInput
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		var old string
+		// FOR UPDATE: две одновременные смены с одним текущим паролем не пройдут обе
+		err := tx.QueryRow(ctx, `SELECT password_hash FROM users WHERE id = $1 FOR UPDATE`, userID).Scan(&old)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNoUser
+		}
+		if err != nil {
+			return err
+		}
+		if bcrypt.CompareHashAndPassword([]byte(old), []byte(current)) != nil {
+			return ErrBadPassword
+		}
+		if _, err := tx.Exec(ctx, `UPDATE users SET password_hash = $2 WHERE id = $1`, userID, string(hash)); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1`, userID)
+		return err
+	})
 }
 
 // NewToken — случайный токен для cookie (256 бит).

@@ -123,3 +123,51 @@ func TestSetRole(t *testing.T) {
 		t.Fatalf("неизвестная роль: %v", err)
 	}
 }
+
+func TestProfileChanges(t *testing.T) {
+	ctx := context.Background()
+	svc := New(storetest.New(t))
+	u, err := svc.Register(ctx, "a@tropa.kz", "Дархан", "password123")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := svc.Rename(ctx, u.ID, "  Д  "); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("короткое имя: %v", err)
+	}
+	if err := svc.Rename(ctx, u.ID, "  Дархан Б. "); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := svc.UserByID(ctx, u.ID); err != nil || got.Name != "Дархан Б." {
+		t.Fatalf("новое имя: %+v %v", got, err)
+	}
+	if _, err := svc.UserByID(ctx, u.ID+100); !errors.Is(err, ErrNoUser) {
+		t.Fatalf("нет пользователя: %v", err)
+	}
+
+	phone, _, _ := svc.CreateSession(ctx, u.ID)
+	laptop, _, _ := svc.CreateSession(ctx, u.ID)
+	if err := svc.ChangePassword(ctx, u.ID, "wrong-pass", "new-password1"); !errors.Is(err, ErrBadPassword) {
+		t.Fatalf("неверный текущий пароль: %v", err)
+	}
+	if err := svc.ChangePassword(ctx, u.ID, "password123", "short"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("короткий новый пароль: %v", err)
+	}
+	if _, err := svc.UserBySession(ctx, phone); err != nil {
+		t.Fatalf("неудачная смена закрыла сессию: %v", err)
+	}
+	if err := svc.ChangePassword(ctx, u.ID, "password123", "new-password1"); err != nil {
+		t.Fatal(err)
+	}
+	for _, tok := range []string{phone, laptop} {
+		if _, err := svc.UserBySession(ctx, tok); !errors.Is(err, ErrNoSession) {
+			t.Fatalf("после смены пароля сессия жива: %v", err)
+		}
+	}
+	if _, err := svc.Authenticate(ctx, "a@tropa.kz", "password123"); !errors.Is(err, ErrBadLogin) {
+		t.Fatalf("старый пароль подходит: %v", err)
+	}
+	if _, err := svc.Authenticate(ctx, "a@tropa.kz", "new-password1"); err != nil {
+		t.Fatalf("новый пароль: %v", err)
+	}
+}

@@ -148,6 +148,30 @@ func (s *Service) ByOrganizer(ctx context.Context, userID int64) ([]*Meetup, err
 		` WHERE m.organizer_id = $1 ORDER BY m.starts_at DESC, m.id DESC`, userID)
 }
 
+// PublicByOrganizer — предстоящие открытые встречи организатора (для его
+// публичной страницы). Встречи «для друзей» сюда не попадают никогда.
+func (s *Service) PublicByOrganizer(ctx context.Context, userID int64) ([]*Meetup, error) {
+	return s.collect(ctx, `SELECT `+meetupColumns+meetupFrom+` WHERE `+upcomingPublic+
+		` AND m.organizer_id = $2 ORDER BY m.starts_at, m.id LIMIT 20`, s.Now(), userID)
+}
+
+// Stats — счётчики для профиля. Считаются все встречи, включая «для друзей»:
+// число ничего о них не раскрывает.
+type Stats struct {
+	Organized int // собрал: не отменённые, в том числе будущие
+	Attended  int // был: прошедшие чужие, где был записан и шёл
+}
+
+func (s *Service) Stats(ctx context.Context, userID int64) (Stats, error) {
+	var st Stats
+	err := s.DB.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM meetups WHERE organizer_id = $1 AND status <> 'cancelled'),
+		(SELECT count(*) FROM participants p JOIN meetups m ON m.id = p.meetup_id
+		  WHERE p.user_id = $1 AND p.status = 'confirmed' AND m.organizer_id <> $1
+		    AND m.status <> 'cancelled' AND m.starts_at <= $2)`, userID, s.Now()).Scan(&st.Organized, &st.Attended)
+	return st, err
+}
+
 // Joined — встреча, на которую записан пользователь, и его статус.
 type Joined struct {
 	*Meetup

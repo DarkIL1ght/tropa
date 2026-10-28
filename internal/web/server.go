@@ -104,6 +104,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /me/telegram", auth.RequireUser(http.HandlerFunc(s.linkTelegram)))
 	mux.Handle("POST /me/telegram/off", auth.RequireUser(http.HandlerFunc(s.unlinkTelegram)))
 	mux.HandleFunc("GET /help/telegram", s.telegramHelp)
+	mux.Handle("GET /me/settings", auth.RequireUser(http.HandlerFunc(s.settings)))
+	mux.Handle("POST /me/name", auth.RequireUser(http.HandlerFunc(s.rename)))
+	mux.Handle("POST /me/password", auth.RequireUser(http.HandlerFunc(s.changePassword)))
+	mux.HandleFunc("GET /u/{id}", s.showUser)
 
 	mux.HandleFunc("GET /meetups", s.meetupList)
 	mux.Handle("GET /places/{slug}/meetups/new", auth.RequireUser(http.HandlerFunc(s.newMeetup)))

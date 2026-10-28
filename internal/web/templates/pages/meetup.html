@@ -12,7 +12,7 @@
     <div><dt>Идут</dt><dd>{{.Going}}{{if .Capacity}} из {{.Capacity}}{{end}}</dd></div>
     <div><dt>Свободно</dt><dd>{{if lt .Free 0}}без лимита{{else}}{{.Free}}{{end}}</dd></div>
     <div><dt>В очереди</dt><dd>{{.Waiting}}</dd></div>
-    <div><dt>Организатор</dt><dd>{{.OrganizerName}}</dd></div>
+    <div><dt>Организатор</dt><dd><a href="/u/{{.OrganizerID}}">{{.OrganizerName}}</a></dd></div>
   </dl>
 
   {{with .Description}}<div class="description">{{.}}</div>{{end}}
@@ -59,7 +59,7 @@
   <h2>Участники</h2>
   <ol class="people">
     {{range $.Data.Participants}}
-    <li>{{.Name}}{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
+    <li><a href="/u/{{.UserID}}">{{.Name}}</a>{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
       {{if eq .Status "waitlist"}}<span class="muted">— в очереди, {{.Position}}</span>{{else if eq .Status "offered"}}<span class="muted">— место предложено</span>{{end}}</li>
     {{end}}
   </ol>

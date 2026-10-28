@@ -15,6 +15,9 @@ var flashText = map[string]string{
 	"login":   "Вы вошли.",
 	"logout":  "Вы вышли из аккаунта.",
 
+	"name_saved":       "Имя сохранено.",
+	"password_changed": "Пароль изменён. На других устройствах нужно войти заново.",
+
 	"meetup_created":   "Встреча создана. Поделитесь ссылкой с друзьями.",
 	"meetup_saved":     "Изменения сохранены.",
 	"meetup_locked":    "Отменённая или прошедшая встреча не меняется.",
@@ -124,6 +127,7 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 type meView struct {
+	Stats  meetups.Stats
 	Mine   []*meetups.Meetup
 	Joined []meetups.Joined
 	// Telegram — уведомления включены на сайте; Linked — подключены у пользователя.
@@ -140,6 +144,10 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 			s.serverError(w, r, err)
 			return
 		}
+	}
+	if v.Stats, err = s.meetups.Stats(r.Context(), u.ID); err != nil {
+		s.serverError(w, r, err)
+		return
 	}
 	if v.Mine, err = s.meetups.ByOrganizer(r.Context(), u.ID); err != nil {
 		s.serverError(w, r, err)
