@@ -14,9 +14,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/meetups"
 	"tropa/internal/places"
 	"tropa/internal/store/storetest"
-	"tropa/internal/trips"
 )
 
 // client — браузер с cookie, который умеет доставать CSRF-токен из страницы.
@@ -73,7 +73,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 // setup меняет сервер до запуска: подставить погоду, часы.
 func newTestEnv(t *testing.T, setup ...func(*Server)) (*httptest.Server, *pgxpool.Pool) {
 	db := storetest.New(t)
-	srv, err := New(Config{}, Services{Auth: auth.New(db), Trips: trips.New(db), Places: places.New(db)},
+	srv, err := New(Config{}, Services{Auth: auth.New(db), Meetups: meetups.New(db), Places: places.New(db)},
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)

@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/meetups"
 	"tropa/internal/places"
-	"tropa/internal/trips"
 	"tropa/internal/weather"
 )
 
@@ -27,9 +27,9 @@ type Config struct {
 
 // Services — бизнес-сервисы, которыми пользуются обработчики.
 type Services struct {
-	Auth   *auth.Service
-	Trips  *trips.Service
-	Places *places.Service
+	Auth    *auth.Service
+	Meetups *meetups.Service
+	Places  *places.Service
 	// Weather — погода для плашки на карте; nil — без погоды.
 	Weather *weather.Client
 }
@@ -37,7 +37,7 @@ type Services struct {
 type Server struct {
 	cfg     Config
 	auth    *auth.Service
-	trips   *trips.Service
+	meetups *meetups.Service
 	places  *places.Service
 	weather *weather.Client
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
@@ -47,7 +47,7 @@ type Server struct {
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, trips: svc.Trips, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -55,12 +55,12 @@ func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
 }
 
 var funcs = template.FuncMap{
-	"date":      func(t time.Time) string { return t.Format("02.01.2006") },
-	"dateRange": dateRange,
-	"money":     money,
-	"plural":    plural,
-	"add":       func(a, b int) int { return a + b },
-	"sub":       func(a, b int) int { return a - b },
+	"date":   func(t time.Time) string { return t.Format("02.01.2006") },
+	"when":   when,
+	"clock":  clock,
+	"plural": plural,
+	"add":    func(a, b int) int { return a + b },
+	"sub":    func(a, b int) int { return a - b },
 }
 
 // loadTemplates собирает каждую страницу как layout + своя страница,
@@ -98,13 +98,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /logout", s.logout)
 	mux.Handle("GET /me", auth.RequireUser(http.HandlerFunc(s.me)))
 
-	mux.HandleFunc("GET /trips", s.catalog)
-	mux.Handle("GET /trips/new", auth.RequireUser(http.HandlerFunc(s.newTrip)))
-	mux.Handle("POST /trips", auth.RequireUser(http.HandlerFunc(s.createTrip)))
-	mux.HandleFunc("GET /trips/{id}", s.showTrip)
-	mux.Handle("GET /trips/{id}/edit", auth.RequireUser(http.HandlerFunc(s.editTrip)))
-	mux.Handle("POST /trips/{id}/edit", auth.RequireUser(http.HandlerFunc(s.updateTrip)))
-	mux.Handle("POST /trips/{id}/status", auth.RequireUser(http.HandlerFunc(s.setTripStatus)))
+	mux.HandleFunc("GET /meetups", s.meetupList)
+	mux.Handle("GET /places/{slug}/meetups/new", auth.RequireUser(http.HandlerFunc(s.newMeetup)))
+	mux.Handle("POST /places/{slug}/meetups", auth.RequireUser(http.HandlerFunc(s.createMeetup)))
+	mux.HandleFunc("GET /m/{token}", s.showMeetup)
+	mux.Handle("GET /m/{token}/edit", auth.RequireUser(http.HandlerFunc(s.editMeetup)))
+	mux.Handle("POST /m/{token}/edit", auth.RequireUser(http.HandlerFunc(s.updateMeetup)))
+	mux.Handle("POST /m/{token}/status", auth.RequireUser(http.HandlerFunc(s.setMeetupStatus)))
+	mux.Handle("POST /m/{token}/join", auth.RequireUser(http.HandlerFunc(s.joinMeetup)))
+	mux.Handle("POST /m/{token}/leave", auth.RequireUser(http.HandlerFunc(s.leaveMeetup)))
+	mux.Handle("POST /m/{token}/accept", auth.RequireUser(http.HandlerFunc(s.acceptOffer)))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
 	return s.recoverer(securityHeaders(s.auth.Middleware(s.cfg.Secure)(mux)))

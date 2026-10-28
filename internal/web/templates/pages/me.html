@@ -5,13 +5,30 @@
   <p class="muted">{{.User.Email}} · с нами с {{date .User.CreatedAt}}</p>
 </section>
 
-<div class="page-head">
-  <h2>Мои походы как организатора</h2>
-  <a class="btn" href="/trips/new">Новый поход</a>
-</div>
 {{with .Data}}
-<div class="grid">{{range .}}{{template "trip_card" .}}{{end}}</div>
+<h2>Я участвую</h2>
+{{with .Joined}}
+<ul class="joined">
+  {{range .}}
+  <li class="card{{if eq .Me.Status "offered"}} offer{{end}}">
+    <a href="{{.URL}}"><strong>{{.Title}}</strong></a>
+    <span class="muted">{{.PlaceName}} · {{when .StartsAt}}</span>
+    <span>{{if eq .Me.Status "offered"}}<strong>Для вас освободилось место — подтвердите до {{clock .Me.OfferExpiresAt}}</strong>{{else if eq .Me.Status "waitlist"}}В очереди, {{.Me.Position}}-е место{{else}}Иду{{end}}{{if eq .Status "cancelled"}} · <span class="err">встреча отменена</span>{{end}}</span>
+  </li>
+  {{end}}
+</ul>
 {{else}}
-<p class="muted">Вы ещё не организовали ни одного похода.</p>
+<p class="muted">Вы пока никуда не записаны. <a href="/meetups">Посмотреть встречи</a></p>
+{{end}}
+
+<div class="page-head">
+  <h2>Мои встречи</h2>
+  <a class="btn" href="/">Собрать встречу</a>
+</div>
+{{with .Mine}}
+<div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+{{else}}
+<p class="muted">Вы ещё не собирали встреч. Выберите место на карте и нажмите «Собрать встречу».</p>
+{{end}}
 {{end}}
 {{end}}

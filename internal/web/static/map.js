@@ -103,9 +103,15 @@
     if (props.season) meta.push(props.season.toLowerCase());
     if (props.off_season) meta.push("сейчас не сезон");
     box.appendChild(el("div", "muted", meta.join(" · ")));
-    var a = el("a", null, "Подробнее →");
+    if (props.meetups) {
+      box.appendChild(el("div", "popup-meetups", props.meetups + " " + plural(props.meetups, "встреча", "встречи", "встреч")));
+    }
+    var a = el("a", null, props.meetups ? "Встречи и подробнее →" : "Подробнее →");
     a.href = props.url;
     box.appendChild(a);
+    var make = el("a", null, "Собрать встречу");
+    make.href = props.url + "/meetups/new";
+    box.appendChild(make);
     return box;
   }
 
@@ -137,7 +143,8 @@
       var text = el("span", "place-text");
       text.appendChild(el("span", "place-name", p.name));
       text.appendChild(el("span", "muted", p.kind + (p.indoor ? " · в помещении" : "") + (p.free ? " · бесплатно" : "") +
-        (p.off_season ? " · не сезон" : "")));
+        (p.off_season ? " · не сезон" : "") +
+        (p.meetups ? " · " + p.meetups + " " + plural(p.meetups, "встреча", "встречи", "встреч") : "")));
       btn.appendChild(text);
       btn.addEventListener("click", function () {
         closePanel();

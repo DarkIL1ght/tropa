@@ -1,0 +1,41 @@
+{{define "title"}}Встречи{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Встречи</h1>
+  <a class="btn ghost" href="/">Выбрать место на карте</a>
+</div>
+
+<form class="filters card" method="get" action="/meetups">
+  <label>Поиск
+    <input type="search" name="q" value="{{.Filter.Query}}" maxlength="100" placeholder="Встреча или место">
+  </label>
+  <label>Что за место
+    <select name="cat">
+      <option value="">Любое</option>
+      {{range .Categories}}<option value="{{.}}"{{if eq (print .) $.Data.Filter.Category}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </label>
+  <div class="filter-actions">
+    <button class="btn">Найти</button>
+    <a href="/meetups">Сбросить</a>
+  </div>
+</form>
+
+<p class="muted">Предстоящих открытых встреч: {{.Page.Total}}</p>
+
+{{with .Page.Meetups}}
+<div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+{{else}}
+<p class="empty card">Встреч пока нет. Выберите место на карте и соберите свою.</p>
+{{end}}
+
+{{if gt .Page.TotalPages 1}}
+<nav class="pager" aria-label="Страницы">
+  {{if .Page.HasPrev}}<a href="{{.Filter.PageURL (sub .Page.Page 1)}}">← Назад</a>{{end}}
+  <span>Страница {{.Page.Page}} из {{.Page.TotalPages}}</span>
+  {{if .Page.HasNext}}<a href="{{.Filter.PageURL (add .Page.Page 1)}}">Вперёд →</a>{{end}}
+</nav>
+{{end}}
+{{end}}
+{{end}}

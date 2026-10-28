@@ -1,0 +1,48 @@
+{{define "title"}}{{if .Data.Meetup}}Редактирование встречи{{else}}Новая встреча{{end}}{{end}}
+{{define "content"}}
+{{with .Data}}
+<form method="post" action="{{if .Meetup}}{{.Meetup.URL}}/edit{{else}}/places/{{.Place.Slug}}/meetups{{end}}" class="card form wide">
+  <h1>{{if .Meetup}}Редактирование встречи{{else}}Новая встреча{{end}}</h1>
+  <p class="muted">Место: <a href="/places/{{.Place.Slug}}">{{.Place.Name}}</a></p>
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+
+  <label>Название
+    <input name="title" value="{{.Input.Title}}" required minlength="3" maxlength="120" placeholder="Каток в субботу вечером">
+    {{with index .Errors "title"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <div class="row">
+    <label>Дата
+      <input type="date" name="date" value="{{.Input.Date}}" required min="{{.Today}}">
+    </label>
+    <label>Время
+      <input type="time" name="time" value="{{.Input.Time}}" required>
+    </label>
+  </div>
+  {{with index .Errors "starts_at"}}<span class="err">{{.}}</span>{{end}}
+
+  <label>Мест, включая вас
+    <input type="number" name="capacity" value="{{.Input.Capacity}}" min="2" max="{{.MaxCapacity}}" placeholder="без лимита">
+    {{with index .Errors "capacity"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <fieldset class="choice">
+    <legend>Кто видит встречу</legend>
+    {{range .Visibility}}
+    <label class="toggle"><input type="radio" name="visibility" value="{{.}}"{{if eq (print .) $.Data.Input.Visibility}} checked{{end}}> {{.Label}}</label>
+    {{end}}
+    {{with index .Errors "visibility"}}<span class="err">{{.}}</span>{{end}}
+  </fieldset>
+
+  <label>Описание
+    <textarea name="description" rows="6" maxlength="5000" placeholder="Где встречаемся, что взять, сколько примерно стоит">{{.Input.Description}}</textarea>
+    {{with index .Errors "description"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <div class="actions">
+    <button class="btn">{{if .Meetup}}Сохранить{{else}}Создать встречу{{end}}</button>
+    <a href="{{if .Meetup}}{{.Meetup.URL}}{{else}}/places/{{.Place.Slug}}{{end}}">Отмена</a>
+  </div>
+</form>
+{{end}}
+{{end}}

@@ -34,10 +34,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/meetups"
 	"tropa/internal/osm"
 	"tropa/internal/places"
 	"tropa/internal/store"
-	"tropa/internal/trips"
 	"tropa/internal/weather"
 	"tropa/internal/web"
 )
@@ -217,13 +217,15 @@ func serve(ctx context.Context, log *slog.Logger) error {
 			return err
 		}
 		authSvc := auth.New(pool)
+		meetupSvc := meetups.New(pool)
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"},
-			web.Services{Auth: authSvc, Trips: trips.New(pool), Places: places.New(pool), Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
+			web.Services{Auth: authSvc, Meetups: meetupSvc, Places: places.New(pool), Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err
 		}
 
 		go purgeSessions(ctx, log, authSvc)
+		go expireOffers(ctx, log, meetupSvc)
 
 		addr := os.Getenv("ADDR")
 		if addr == "" {
@@ -264,6 +266,25 @@ func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 			log.Warn("очистка сессий", "err", err)
 		} else if n > 0 {
 			log.Info("удалены просроченные сессии", "count", n)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}
+
+// expireOffers раз в минуту снимает просроченные предложения мест
+// и передаёт места дальше по очереди.
+func expireOffers(ctx context.Context, log *slog.Logger, m *meetups.Service) {
+	t := time.NewTicker(time.Minute)
+	defer t.Stop()
+	for {
+		if n, err := m.ExpireOffers(ctx); err != nil && ctx.Err() == nil {
+			log.Warn("предложения мест", "err", err)
+		} else if n > 0 {
+			log.Info("сняты просроченные предложения мест", "count", n)
 		}
 		select {
 		case <-ctx.Done():

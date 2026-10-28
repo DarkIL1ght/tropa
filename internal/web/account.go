@@ -4,8 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/meetups"
 )
 
 // flashText — тексты коротких сообщений по коду из cookie.
@@ -14,14 +16,20 @@ var flashText = map[string]string{
 	"login":   "Вы вошли.",
 	"logout":  "Вы вышли из аккаунта.",
 
-	"trip_created":     "Поход создан как черновик. Проверьте детали и откройте запись.",
-	"trip_saved":       "Изменения сохранены.",
-	"trip_locked":      "Прошедший или отменённый поход не редактируется.",
-	"trip_stale":       "Статус похода уже изменился — вот актуальный.",
-	"status_open":      "Запись открыта.",
-	"status_closed":    "Запись закрыта.",
-	"status_done":      "Поход отмечен как прошедший.",
-	"status_cancelled": "Поход отменён.",
+	"meetup_created":   "Встреча создана. Поделитесь ссылкой с друзьями.",
+	"meetup_saved":     "Изменения сохранены.",
+	"meetup_locked":    "Отменённая или прошедшая встреча не меняется.",
+	"meetup_stale":     "Статус встречи уже изменился — вот актуальный.",
+	"meetup_open":      "Запись открыта.",
+	"meetup_closed":    "Запись закрыта.",
+	"meetup_cancelled": "Встреча отменена.",
+	"join_confirmed":   "Вы идёте!",
+	"join_waitlist":    "Мест нет — вы в очереди. Если место освободится, оно будет ждать вас сутки.",
+	"join_offered":     "Для вас освободилось место — подтвердите участие.",
+	"join_closed":      "Запись на эту встречу закрыта.",
+	"left":             "Вы больше не участвуете во встрече.",
+	"leave_organizer":  "Организатор не может выйти из своей встречи — её можно отменить.",
+	"offer_gone":       "Предложение места истекло.",
 }
 
 type accountForm struct {
@@ -115,13 +123,25 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+type meView struct {
+	Mine   []*meetups.Meetup
+	Joined []meetups.Joined
+	Now    time.Time
+}
+
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
-	mine, err := s.trips.ByOrganizer(r.Context(), auth.CurrentUser(r.Context()).ID)
-	if err != nil {
+	u := auth.CurrentUser(r.Context())
+	v := meView{Now: s.meetups.Now()}
+	var err error
+	if v.Mine, err = s.meetups.ByOrganizer(r.Context(), u.ID); err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	s.render(w, r, http.StatusOK, "me.html", mine)
+	if v.Joined, err = s.meetups.ByParticipant(r.Context(), u.ID); err != nil {
+		s.serverError(w, r, err)
+		return
+	}
+	s.render(w, r, http.StatusOK, "me.html", v)
 }
 
 // startSession открывает новую сессию; старую cookie (если была)

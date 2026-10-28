@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"tropa/internal/meetups"
 	"tropa/internal/places"
-	"tropa/internal/trips"
 	"tropa/internal/weather"
 )
 
@@ -107,6 +107,7 @@ type placeSummary struct {
 	Free      bool   `json:"free"`
 	Season    string `json:"season,omitempty"`     // пусто — круглый год
 	OffSeason bool   `json:"off_season,omitempty"` // сейчас не сезон
+	Meetups   int    `json:"meetups,omitempty"`    // предстоящих открытых встреч
 	URL       string `json:"url"`
 }
 
@@ -119,6 +120,16 @@ func (s *Server) apiPlaces(w http.ResponseWriter, r *http.Request) {
 	list, err := s.places.Search(r.Context(), q)
 	if err != nil {
 		s.log.Error("поиск мест", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "ошибка сервера"})
+		return
+	}
+	ids := make([]int64, len(list))
+	for i, p := range list {
+		ids[i] = p.ID
+	}
+	counts, err := s.meetups.CountByPlace(r.Context(), ids)
+	if err != nil {
+		s.log.Error("встречи на карте", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "ошибка сервера"})
 		return
 	}
@@ -135,7 +146,7 @@ func (s *Server) apiPlaces(w http.ResponseWriter, r *http.Request) {
 			Properties: placeSummary{
 				Slug: p.Slug, Name: p.Name, Category: string(p.Category), Kind: p.Kind.Label(),
 				Indoor: p.Indoor, Free: p.Free, Season: season, OffSeason: p.OffSeason(month),
-				URL: "/places/" + p.Slug,
+				Meetups: counts[p.ID], URL: "/places/" + p.Slug,
 			},
 		})
 	}
@@ -153,6 +164,7 @@ type placeView struct {
 	Place     *places.Place
 	OSMURL    string
 	OffSeason bool
+	Meetups   []*meetups.Meetup
 }
 
 func (s *Server) showPlace(w http.ResponseWriter, r *http.Request) {
@@ -166,6 +178,10 @@ func (s *Server) showPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v := placeView{Place: p, OffSeason: p.OffSeason(s.month())}
+	if v.Meetups, err = s.meetups.ByPlace(r.Context(), p.ID); err != nil {
+		s.serverError(w, r, err)
+		return
+	}
 	if p.OSMRef != "" {
 		v.OSMURL = "https://www.openstreetmap.org/" + p.OSMRef
 	}
@@ -173,4 +189,4 @@ func (s *Server) showPlace(w http.ResponseWriter, r *http.Request) {
 }
 
 // month — текущий месяц по Алматы: от него зависит «не сезон».
-func (s *Server) month() time.Month { return s.now().In(trips.Almaty).Month() }
+func (s *Server) month() time.Month { return s.now().In(meetups.Almaty).Month() }

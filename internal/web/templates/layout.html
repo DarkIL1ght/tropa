@@ -12,7 +12,7 @@
     <a class="logo" href="/">Tropa</a>
     <nav>
       <a href="/">Карта</a>
-      <a class="nav-secondary" href="/trips">Походы</a>
+      <a class="nav-secondary" href="/meetups">Встречи</a>
       {{if .User}}
         <a href="/me">{{.User.Name}}</a>
         <form method="post" action="/logout" class="inline">
@@ -33,17 +33,17 @@
 </body>
 </html>
 
-{{/* Карточка похода в списках: главная, каталог, профиль. */}}
-{{define "trip_card"}}
-<a class="trip-card" href="/trips/{{.ID}}">
+{{/* Карточка встречи в списках: встречи, профиль, страница места. */}}
+{{define "meetup_card"}}
+<a class="meetup-card" href="{{.URL}}">
   <span class="badge {{.Status}}">{{.Status.Label}}</span>
   <h3>{{.Title}}</h3>
-  <p class="muted">{{.Region}} · {{dateRange .StartDate .EndDate}}</p>
+  <p class="muted"><span class="pin cat-{{.PlaceCategory}}"></span> {{.PlaceName}}</p>
   <p class="meta">
-    <span>{{.Difficulty.Label}}</span>
-    <span>{{.Days}} {{plural .Days "день" "дня" "дней"}}</span>
-    <span>{{.Capacity}} {{plural .Capacity "место" "места" "мест"}}</span>
-    <span>{{money .Fee}}</span>
+    <span>{{when .StartsAt}}</span>
+    <span>{{plural .Going "идёт" "идут" "идут"}} {{.Going}}{{if .Capacity}} из {{.Capacity}}{{end}}</span>
+    {{if .Waiting}}<span>{{.Waiting}} в очереди</span>{{end}}
+    {{if eq .Visibility "friends"}}<span>для друзей</span>{{end}}
   </p>
 </a>
 {{end}}

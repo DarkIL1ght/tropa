@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"tropa/internal/meetups"
 	"tropa/internal/places"
-	"tropa/internal/trips"
 	"tropa/internal/weather"
 )
 
@@ -75,7 +75,7 @@ func TestMapWeatherBanner(t *testing.T) {
 
 func TestOffSeason(t *testing.T) {
 	january := func(s *Server) {
-		s.now = func() time.Time { return time.Date(2027, 1, 15, 12, 0, 0, 0, trips.Almaty) }
+		s.now = func() time.Time { return time.Date(2027, 1, 15, 12, 0, 0, 0, meetups.Almaty) }
 	}
 	ts, db := newTestEnv(t, january)
 	seedPlaces(t, places.New(db), &places.Place{
