@@ -576,6 +576,7 @@ html, body { overflow-x: hidden; }
   .map .leaflet-bottom { bottom: 72px; }
   .weather { left: 12px; right: 12px; max-width: none; border-radius: 22px; }
 }
+/* узкий телефон: «Встречи» остаются в шапке; «Админка» и «Выйти» — в профиле, «Регистрация» — со страницы входа */
 @media (max-width: 420px) { .nav-secondary { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }

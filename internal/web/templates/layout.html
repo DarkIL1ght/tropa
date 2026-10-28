@@ -20,17 +20,17 @@
     </a>
     <nav aria-label="Основное меню">
       <a href="/">Карта</a>
-      <a class="nav-secondary" href="/meetups">Встречи</a>
+      <a href="/meetups">Встречи</a>
       {{if .User}}
         {{if .User.IsAdmin}}<a class="nav-secondary" href="/admin">Админка</a>{{end}}
         <a class="nav-user" href="/me"><span class="avatar small" aria-hidden="true">{{initial .User.Name}}</span><span class="nav-name">{{.User.Name}}</span></a>
-        <form method="post" action="/logout" class="inline">
+        <form method="post" action="/logout" class="inline nav-secondary">
           <input type="hidden" name="csrf_token" value="{{.CSRF}}">
           <button class="link">Выйти</button>
         </form>
       {{else}}
         <a href="/login">Вход</a>
-        <a class="btn small light" href="/register">Регистрация</a>
+        <a class="btn small light nav-secondary" href="/register">Регистрация</a>
       {{end}}
     </nav>
   </header>

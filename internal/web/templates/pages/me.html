@@ -12,6 +12,10 @@
       <a class="btn light ghost" href="/me/settings">Настройки</a>
       <a class="btn light ghost" href="/u/{{.User.ID}}">Публичная страница</a>
       {{if .User.IsAdmin}}<a class="btn light ghost" href="/admin">Админка</a>{{end}}
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+        <button class="btn light ghost">Выйти</button>
+      </form>
     </div>
   </div>
 </section>
