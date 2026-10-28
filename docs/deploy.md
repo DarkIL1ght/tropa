@@ -60,6 +60,8 @@ docker compose -f compose.prod.yml --env-file .env.prod logs -f app caddy   # Ct
 docker compose -f compose.prod.yml --env-file .env.prod run --rm app seed /data/places
 # сначала зарегистрироваться на сайте, затем:
 docker compose -f compose.prod.yml --env-file .env.prod run --rm app make-admin <email>
+# пользователь без Telegram забыл пароль — ссылка сброса на сутки, передать ему:
+docker compose -f compose.prod.yml --env-file .env.prod run --rm app reset-link <email>
 ```
 
 Чтобы не писать длинную команду: `alias dc='docker compose -f compose.prod.yml --env-file .env.prod'` в `~/.bashrc`.

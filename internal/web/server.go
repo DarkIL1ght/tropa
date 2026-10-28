@@ -27,6 +27,8 @@ type Config struct {
 	Secure bool
 	// TrustProxy — адрес посетителя брать из X-Forwarded-For (сервер за своим прокси).
 	TrustProxy bool
+	// SiteURL — адрес сайта без / в конце, для ссылок в сообщениях бота.
+	SiteURL string
 }
 
 // Services — бизнес-сервисы, которыми пользуются обработчики.
@@ -108,6 +110,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /login", s.loginForm)
 	mux.HandleFunc("POST /login", s.login)
 	mux.HandleFunc("POST /logout", s.logout)
+	mux.HandleFunc("GET /password/forgot", s.forgotForm)
+	mux.HandleFunc("POST /password/forgot", s.forgot)
+	mux.HandleFunc("GET /password/reset/{token}", s.resetForm)
+	mux.HandleFunc("POST /password/reset/{token}", s.reset)
 	mux.Handle("GET /me", auth.RequireUser(http.HandlerFunc(s.me)))
 	mux.Handle("POST /me/telegram", auth.RequireUser(http.HandlerFunc(s.linkTelegram)))
 	mux.Handle("POST /me/telegram/off", auth.RequireUser(http.HandlerFunc(s.unlinkTelegram)))

@@ -1,0 +1,27 @@
+{{define "title"}}Новый пароль{{end}}
+{{define "content"}}
+{{with .Data}}
+{{if .Bad}}
+<div class="card form">
+  <h1>Ссылка не работает</h1>
+  <p>Ссылка для сброса пароля неверна, уже использована или устарела (она действует 30 минут).</p>
+  <p><a class="btn" href="/password/forgot">Запросить новую</a></p>
+</div>
+{{else}}
+<form method="post" action="/password/reset/{{.Token}}" class="card form">
+  <h1>Новый пароль</h1>
+  <p class="muted">Для аккаунта «{{.Name}}». После смены пароля на остальных устройствах нужно будет войти заново.</p>
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  <label>Новый пароль
+    <input type="password" name="password" required minlength="8" autocomplete="new-password">
+    {{with index .Errors "password"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  <label>Ещё раз
+    <input type="password" name="password2" required minlength="8" autocomplete="new-password">
+    {{with index .Errors "password2"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+  <button class="btn">Сохранить и войти</button>
+</form>
+{{end}}
+{{end}}
+{{end}}

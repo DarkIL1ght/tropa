@@ -4,6 +4,7 @@
 //	tropa migrate             — только применить миграции
 //	tropa seed [папка]        — загрузить места из data/places/*.json (идемпотентно)
 //	tropa make-admin <email>  — выдать роль админа зарегистрированному пользователю
+//	tropa reset-link <email>  — ссылка сброса пароля на сутки (для тех, у кого нет Telegram)
 //	tropa osm-fetch [--from raw.json]
 //	                          — кандидаты из OpenStreetMap в data/places/candidates.json
 //	                            (базу не трогает; сырой ответ кэшируется во временной папке)
@@ -38,6 +39,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
@@ -93,8 +95,14 @@ func main() {
 			log.Info("роль админа выдана", "email", os.Args[2])
 			return nil
 		})
+	case "reset-link":
+		if len(os.Args) != 3 {
+			err = errors.New("использование: tropa reset-link <email>")
+			break
+		}
+		err = withDB(ctx, func(pool *pgxpool.Pool) error { return resetLink(ctx, log, pool, os.Args[2]) })
 	default:
-		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate, seed, make-admin, osm-fetch)", cmd)
+		err = fmt.Errorf("неизвестная команда %q (есть: serve, migrate, seed, make-admin, reset-link, osm-fetch)", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
@@ -114,6 +122,29 @@ func withDB(ctx context.Context, fn func(*pgxpool.Pool) error) error {
 	}
 	defer pool.Close()
 	return fn(pool)
+}
+
+// resetLinkTTL — ссылка от админа живёт дольше, чем от бота: её передают вручную.
+const resetLinkTTL = 24 * time.Hour
+
+// resetLink печатает ссылку сброса пароля — админ передаёт её пользователю
+// без Telegram (сам пароль админ не узнаёт).
+func resetLink(ctx context.Context, log *slog.Logger, pool *pgxpool.Pool, email string) error {
+	if err := migrate(ctx, log, pool); err != nil {
+		return err
+	}
+	site := strings.TrimRight(os.Getenv("SITE_URL"), "/")
+	if site == "" {
+		return errors.New("не задан SITE_URL: ссылка должна вести на сайт")
+	}
+	found, err := auth.New(pool).RequestReset(ctx, email, resetLinkTTL, func(_ pgx.Tx, _ int64, token string) error {
+		fmt.Println(site + "/password/reset/" + token)
+		return nil
+	})
+	if err == nil && !found {
+		err = fmt.Errorf("пользователь %s не найден", email)
+	}
+	return err
 }
 
 // seed загружает места из папки (по умолчанию data/places в корне проекта).
@@ -237,7 +268,7 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		meetupSvc := meetups.New(pool)
 		meetupSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
-		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1"},
+		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL},
 			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool),
 				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {

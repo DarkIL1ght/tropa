@@ -1,0 +1,29 @@
+{{define "title"}}Восстановление пароля{{end}}
+{{define "content"}}
+{{with .Data}}
+{{if .Sent}}
+<div class="card form">
+  <h1>Проверьте Telegram</h1>
+  <p>Если аккаунт с адресом <b>{{.Email}}</b> есть и к нему подключён Telegram, бот уже прислал ссылку для сброса пароля. Она действует 30 минут.</p>
+  <p class="muted">Telegram не подключён? Напишите администратору сайта — он пришлёт ссылку вручную.</p>
+  <p><a href="/login">Вернуться ко входу</a></p>
+</div>
+{{else}}
+<form method="post" action="/password/forgot" class="card form">
+  <h1>Забыли пароль?</h1>
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  {{with index .Errors "form"}}<p class="err">{{.}}</p>{{end}}
+  {{if .Telegram}}
+  <p class="muted">Пришлём ссылку для сброса в Telegram — если он подключён к аккаунту.</p>
+  <label>Email
+    <input type="email" name="email" value="{{.Email}}" required autocomplete="email">
+  </label>
+  <button class="btn">Прислать ссылку</button>
+  {{else}}
+  <p>Сброс через Telegram сейчас недоступен. Напишите администратору сайта — он пришлёт ссылку вручную.</p>
+  {{end}}
+  <p class="muted"><a href="/login">Вспомнили? Войти</a></p>
+</form>
+{{end}}
+{{end}}
+{{end}}

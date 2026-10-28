@@ -64,9 +64,10 @@ func (l *limiter) allow(key string) (bool, time.Duration) {
 
 // limits — ограничения частоты для форм, которые можно перебирать.
 type limits struct {
-	loginIP, loginEmail *limiter
-	register            *limiter
-	password            *limiter
+	loginIP, loginEmail   *limiter
+	register              *limiter
+	password              *limiter
+	forgotIP, forgotEmail *limiter
 }
 
 func newLimits() *limits {
@@ -75,6 +76,9 @@ func newLimits() *limits {
 		loginEmail: newLimiter(10, 2*time.Minute),
 		register:   newLimiter(5, 10*time.Minute),
 		password:   newLimiter(5, 3*time.Minute),
+		// сброс шлёт сообщения в Telegram — не даём спамить чужой аккаунт
+		forgotIP:    newLimiter(5, 10*time.Minute),
+		forgotEmail: newLimiter(3, 10*time.Minute),
 	}
 }
 
