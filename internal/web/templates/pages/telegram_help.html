@@ -1,7 +1,14 @@
 {{define "title"}}Уведомления в Telegram{{end}}
+{{define "masthead"}}
+<section class="masthead">
+  <div class="masthead-in">
+    <h1>Уведомления в Telegram</h1>
+    <p class="lead">Бот напишет, когда во встрече освободится место или её перенесут.</p>
+  </div>
+</section>
+{{end}}
 {{define "content"}}
-<article class="card form wide help">
-  <h1>Уведомления в Telegram</h1>
+<article class="help">
   {{if not .Data.Enabled}}
   <p class="flash">Сейчас уведомления на сайте выключены. Инструкция пригодится, когда их включат.</p>
   {{end}}

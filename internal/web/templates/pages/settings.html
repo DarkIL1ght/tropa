@@ -1,11 +1,18 @@
 {{define "title"}}Настройки{{end}}
+{{define "masthead"}}
+<section class="masthead">
+  <div class="masthead-in">
+    <a class="back" href="/me">← Профиль</a>
+    <h1>Настройки</h1>
+  </div>
+</section>
+{{end}}
 {{define "content"}}
 {{with .Data}}
 <form method="post" action="/me/name" class="card form">
-  <a class="back" href="/me">← Профиль</a>
-  <h1>Настройки</h1>
+  <h2>Имя</h2>
   <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-  <label>Имя
+  <label>Как вас зовут
     <input name="name" value="{{.Name}}" required minlength="2" maxlength="60" autocomplete="name">
     {{with index .Errors "name"}}<span class="err">{{.}}</span>{{end}}
   </label>

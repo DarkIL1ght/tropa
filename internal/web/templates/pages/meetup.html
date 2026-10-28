@@ -1,14 +1,31 @@
 {{define "title"}}{{.Data.Meetup.Title}}{{end}}
+{{define "masthead"}}
+{{with .Data.Meetup}}
+{{$d := ticket .StartsAt}}
+<section class="masthead cat-{{.PlaceCategory}}">
+  <div class="masthead-in masthead-meetup">
+    <div class="stub big" aria-hidden="true">
+      <span class="stub-day">{{$d.Day}}</span>
+      <span class="stub-month">{{$d.Month}}, {{$d.Weekday}}</span>
+      <span class="stub-time">{{$d.Time}}</span>
+    </div>
+    <div>
+      <a class="back" href="/places/{{.PlaceSlug}}">← {{.PlaceName}}</a>
+      <h1>{{.Title}}</h1>
+      <p class="lead">{{when .StartsAt}}, <a href="/places/{{.PlaceSlug}}">{{.PlaceName}}</a></p>
+      <p class="badges">
+        <span class="badge {{if $.Data.Past}}past{{else}}{{.Status}}{{end}}">{{if $.Data.Past}}Прошла{{else}}{{.Status.Label}}{{end}}</span>
+        {{if eq .Visibility "friends"}}<span class="badge">Для друзей</span>{{end}}
+      </p>
+    </div>
+  </div>
+</section>
+{{end}}
+{{end}}
 {{define "content"}}
 {{with .Data.Meetup}}
 <article class="meetup">
-  <a class="back" href="/places/{{.PlaceSlug}}">← {{.PlaceName}}</a><br>
-  <span class="badge {{if $.Data.Past}}past{{else}}{{.Status}}{{end}}">{{if $.Data.Past}}Прошла{{else}}{{.Status.Label}}{{end}}</span>
-  {{if eq .Visibility "friends"}}<span class="badge">Для друзей</span>{{end}}
-  <h1>{{.Title}}</h1>
-  <p class="lead">{{when .StartsAt}} · <a href="/places/{{.PlaceSlug}}">{{.PlaceName}}</a></p>
-
-  <dl class="facts card">
+  <dl class="facts">
     <div><dt>Идут</dt><dd>{{.Going}}{{if .Capacity}} из {{.Capacity}}{{end}}</dd></div>
     <div><dt>Свободно</dt><dd>{{if lt .Free 0}}без лимита{{else}}{{.Free}}{{end}}</dd></div>
     <div><dt>В очереди</dt><dd>{{.Waiting}}</dd></div>
@@ -17,14 +34,14 @@
 
   {{with .Description}}<div class="description">{{.}}</div>{{end}}
 
-  <section class="card join">
+  <section class="join">
   {{with $.Data.Me}}
     {{if eq .Status "offered"}}
       <p><strong>Для вас освободилось место!</strong> Подтвердите до {{clock .OfferExpiresAt}}, иначе оно уйдёт следующему в очереди.</p>
       <div class="actions">
         <form method="post" action="{{$.Data.Meetup.URL}}/accept" class="inline">
           <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-          <button class="btn">Я иду</button>
+          <button class="btn accent">Я иду</button>
         </form>
         <form method="post" action="{{$.Data.Meetup.URL}}/leave" class="inline">
           <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
@@ -32,7 +49,7 @@
         </form>
       </div>
     {{else}}
-      <p>{{if eq .Status "confirmed"}}Вы идёте.{{else}}Вы в очереди: {{.Position}}-е место. Если кто-то выйдет, место предложат по порядку.{{end}}</p>
+      <p>{{if eq .Status "confirmed"}}<strong>Вы идёте.</strong>{{else}}<strong>Вы в очереди: {{.Position}}-е место.</strong> Если кто-то выйдет, место предложат по порядку.{{end}}</p>
       {{if and (ne $.Data.Meetup.OrganizerID .UserID) (not $.Data.Past)}}
       <form method="post" action="{{$.Data.Meetup.URL}}/leave" class="inline">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
@@ -48,10 +65,10 @@
     {{else if $.User}}
       <form method="post" action="{{.URL}}/join" class="inline">
         <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
-        <button class="btn">{{if eq .Free 0}}Встать в очередь{{else}}Я иду{{end}}</button>
+        <button class="btn accent">{{if eq .Free 0}}Встать в очередь{{else}}Я иду{{end}}</button>
       </form>
     {{else}}
-      <p><a class="btn" href="/login?next={{.URL}}">Войдите, чтобы записаться</a></p>
+      <p><a class="btn accent" href="/login?next={{.URL}}">Войдите, чтобы записаться</a></p>
     {{end}}
   {{end}}
   </section>
@@ -59,7 +76,7 @@
   <h2>Участники</h2>
   <ol class="people">
     {{range $.Data.Participants}}
-    <li><a href="/u/{{.UserID}}">{{.Name}}</a>{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
+    <li><span class="avatar small" aria-hidden="true">{{initial .Name}}</span><a href="/u/{{.UserID}}">{{.Name}}</a>{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
       {{if eq .Status "waitlist"}}<span class="muted">— в очереди, {{.Position}}</span>{{else if eq .Status "offered"}}<span class="muted">— место предложено</span>{{end}}</li>
     {{end}}
   </ol>

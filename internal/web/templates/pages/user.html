@@ -1,24 +1,25 @@
 {{define "title"}}{{.Data.Person.Name}}{{end}}
-{{define "content"}}
+{{define "masthead"}}
 {{with .Data}}
-<section class="card">
-  <div class="profile-head">
+<section class="masthead">
+  <div class="masthead-in profile-head">
     <span class="avatar" aria-hidden="true">{{initial .Person.Name}}</span>
     <div>
       <h1>{{.Person.Name}}</h1>
-      <p class="muted">С нами с {{date .Person.CreatedAt}}</p>
+      <p class="lead">С нами с {{date .Person.CreatedAt}}</p>
+      <p class="tally"><span>Собрано встреч: <strong>{{.Stats.Organized}}</strong></span> <span>Посещено: <strong>{{.Stats.Attended}}</strong></span></p>
     </div>
   </div>
-  <dl class="stats">
-    <div><dt>Собрано встреч</dt><dd>{{.Stats.Organized}}</dd></div>
-    <div><dt>Посещено встреч</dt><dd>{{.Stats.Attended}}</dd></div>
-  </dl>
-  {{if .Own}}<p class="muted small profile-actions">Так вашу страницу видят другие. Email и встречи «для друзей» здесь не показываются. <a href="/me/settings">Изменить имя</a></p>{{end}}
 </section>
+{{end}}
+{{end}}
+{{define "content"}}
+{{with .Data}}
+{{if .Own}}<p class="note">Так вашу страницу видят другие. Email и встречи «для друзей» здесь не показываются. <a href="/me/settings">Изменить имя</a></p>{{end}}
 
 <h2>Ближайшие встречи</h2>
 {{with .Upcoming}}
-<div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+<div class="tickets">{{range .}}{{template "meetup_card" .}}{{end}}</div>
 {{else}}
 <div class="empty"><p>Предстоящих открытых встреч нет.</p></div>
 {{end}}

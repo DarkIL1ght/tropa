@@ -1,8 +1,12 @@
 {{define "title"}}Не найдено{{end}}
-{{define "content"}}
-<section class="empty notfound">
-  <h1>Такой тропы нет</h1>
-  <p>Возможно, ссылка на встречу неполная или место убрали с карты.</p>
-  <div class="actions"><a class="btn" href="/">К карте</a> <a class="btn ghost" href="/meetups">Встречи</a></div>
+{{define "masthead"}}
+<section class="masthead">
+  <div class="masthead-in">
+    <p class="kicker">Ошибка 404</p>
+    <h1>Такой тропы нет</h1>
+    <p class="lead">Возможно, ссылка на встречу неполная или место убрали с карты.</p>
+    <div class="actions"><a class="btn light" href="/">К карте</a> <a class="btn light ghost" href="/meetups">Встречи</a></div>
+  </div>
 </section>
 {{end}}
+{{define "content"}}{{end}}

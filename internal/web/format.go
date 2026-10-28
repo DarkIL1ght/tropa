@@ -2,6 +2,7 @@ package web
 
 import (
 	"strings"
+	"time"
 
 	"tropa/internal/meetups"
 )
@@ -11,6 +12,19 @@ var (
 	when  = meetups.When
 	clock = meetups.Clock
 )
+
+var (
+	monthsShort   = [...]string{"янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"}
+	weekdaysShort = [...]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
+)
+
+// stub — части даты для «корешка» билета встречи, по времени Алматы.
+type stub struct{ Day, Month, Weekday, Time string }
+
+func ticket(t time.Time) stub {
+	t = t.In(meetups.Almaty)
+	return stub{Day: t.Format("2"), Month: monthsShort[t.Month()-1], Weekday: weekdaysShort[t.Weekday()], Time: t.Format("15:04")}
+}
 
 // initial — первая буква имени для аватара-кружка.
 func initial(name string) string {

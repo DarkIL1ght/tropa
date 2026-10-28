@@ -10,7 +10,7 @@ import (
 	"tropa/internal/places"
 )
 
-var userLinkRe = regexp.MustCompile(`href="(/u/\d+)">Моя публичная страница`)
+var userLinkRe = regexp.MustCompile(`href="(/u/\d+)">Публичная страница`)
 
 func TestSettings(t *testing.T) {
 	ts := newTestServer(t)

@@ -1,12 +1,16 @@
 {{define "title"}}Встречи{{end}}
+{{define "masthead"}}
+<section class="masthead">
+  <div class="masthead-in">
+    <h1>Встречи</h1>
+    <p class="lead">Открытые встречи на ближайшие дни. Присоединяйтесь или соберите свою на любом месте карты.</p>
+    <a class="btn light" href="/">Выбрать место на карте</a>
+  </div>
+</section>
+{{end}}
 {{define "content"}}
 {{with .Data}}
-<div class="page-head">
-  <h1>Встречи</h1>
-  <a class="btn ghost" href="/">Выбрать место на карте</a>
-</div>
-
-<form class="filters card" method="get" action="/meetups">
+<form class="filters" method="get" action="/meetups" role="search">
   <label>Поиск
     <input type="search" name="q" value="{{.Filter.Query}}" maxlength="100" placeholder="Встреча или место">
   </label>
@@ -18,23 +22,26 @@
   </label>
   <div class="filter-actions">
     <button class="btn">Найти</button>
-    <a href="/meetups">Сбросить</a>
+    {{if or .Filter.Query .Filter.Category}}<a href="/meetups">Сбросить</a>{{end}}
   </div>
 </form>
 
-<p class="muted">Предстоящих открытых встреч: {{.Page.Total}}</p>
+<p class="count">{{if .Page.Total}}{{.Page.Total}} {{plural .Page.Total "встреча" "встречи" "встреч"}} впереди{{end}}</p>
 
 {{with .Page.Meetups}}
-<div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+<div class="tickets">{{range .}}{{template "meetup_card" .}}{{end}}</div>
 {{else}}
-<div class="empty"><p>Встреч пока нет. Выберите место на карте и соберите свою.</p></div>
+<div class="empty">
+  <p><strong>Встреч пока нет.</strong> Откройте карту, выберите место и нажмите «Собрать встречу» — она появится здесь.</p>
+  <a class="btn" href="/">Открыть карту</a>
+</div>
 {{end}}
 
 {{if gt .Page.TotalPages 1}}
 <nav class="pager" aria-label="Страницы">
   {{if .Page.HasPrev}}<a href="{{.Filter.PageURL (sub .Page.Page 1)}}">← Назад</a>{{end}}
   <span>Страница {{.Page.Page}} из {{.Page.TotalPages}}</span>
-  {{if .Page.HasNext}}<a href="{{.Filter.PageURL (add .Page.Page 1)}}">Вперёд →</a>{{end}}
+  {{if .Page.HasNext}}<a href="{{.Filter.PageURL (add .Page.Page 1)}}">Вперёд</a>{{end}}
 </nav>
 {{end}}
 {{end}}

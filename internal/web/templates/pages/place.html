@@ -2,14 +2,21 @@
 {{define "head"}}
 <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
 {{end}}
+{{define "masthead"}}
+{{with .Data.Place}}
+<section class="masthead cat-{{.Category}}">
+  <div class="masthead-in">
+    <a class="back" href="/">← К карте</a>
+    <p class="kicker"><span class="pin cat-{{.Category}}"></span>{{.Category.Label}}, {{.Kind.Label}}</p>
+    <h1>{{.Name}}</h1>
+    {{with .Address}}<p class="lead">{{.}}</p>{{end}}
+  </div>
+</section>
+{{end}}
+{{end}}
 {{define "content"}}
 {{with .Data.Place}}
 <article class="place">
-  <a class="back" href="/">← К карте</a><br>
-  <span class="badge cat-{{.Category}}">{{.Category.Label}} · {{.Kind.Label}}</span>
-  <h1>{{.Name}}</h1>
-  {{with .Address}}<p class="lead">{{.}}</p>{{end}}
-
   <ul class="tags">
     <li>{{if .Indoor}}В помещении{{else}}На улице{{end}}</li>
     {{if .Free}}<li>Бесплатно</li>{{end}}
@@ -22,23 +29,25 @@
   {{with .OpeningHours}}<p><strong>Часы работы:</strong> {{.}}</p>{{end}}
 
   <div class="actions">
-    <a class="btn" href="/places/{{.Slug}}/meetups/new">Собрать встречу</a>
+    <a class="btn accent" href="/places/{{.Slug}}/meetups/new">Собрать встречу</a>
     <a class="btn ghost" href="{{.TwoGISURL}}" target="_blank" rel="noopener">Открыть в 2ГИС</a>
     {{with .Website}}<a class="btn ghost" href="{{.}}" target="_blank" rel="noopener nofollow">Сайт</a>{{end}}
   </div>
 
   <div id="place-map" class="place-map" data-lat="{{.Lat}}" data-lon="{{.Lon}}" data-category="{{.Category}}"
        role="img" aria-label="{{.Name}} на карте"></div>
+  {{if $.Data.OSMURL}}
+  <p class="small muted">Данные: <a href="{{$.Data.OSMURL}}" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
+  {{end}}
 
   <h2>Ближайшие встречи</h2>
   {{with $.Data.Meetups}}
-  <div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+  <div class="tickets">{{range .}}{{template "meetup_card" .}}{{end}}</div>
   {{else}}
-  <div class="empty"><p>Открытых встреч здесь пока нет — соберите первую.</p></div>
-  {{end}}
-
-  {{if $.Data.OSMURL}}
-  <p class="muted small">Данные: <a href="{{$.Data.OSMURL}}" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
+  <div class="empty">
+    <p>Здесь пока никто не собирается. Назначьте дату — ссылку на встречу можно отправить друзьям.</p>
+    <a class="btn accent" href="/places/{{.Slug}}/meetups/new">Собрать встречу</a>
+  </div>
   {{end}}
 </article>
 {{end}}

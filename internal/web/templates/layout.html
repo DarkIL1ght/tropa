@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{block "title" .}}Tropa{{end}} · Tropa</title>
-  <meta name="theme-color" content="#24614a">
+  <meta name="theme-color" content="#173d33">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/static/fonts/unbounded-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/golos-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/app.css">
   {{block "head" .}}{{end}}
 </head>
@@ -14,7 +16,7 @@
   <header class="top">
     <a class="logo" href="/" aria-label="Tropa — на главную">
       <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 26 12.5 9l5 8 3.5-5L30 26Z" fill="currentColor"/><path d="m9.8 13.4 2.7-4.4 2.7 4.2-1.35-.8-1.35 1.2-1.35-1.2Z" class="logo-snow"/></svg>
-      <span>Tropa</span>
+      <span>tropa</span>
     </a>
     <nav aria-label="Основное меню">
       <a href="/">Карта</a>
@@ -27,35 +29,44 @@
         </form>
       {{else}}
         <a href="/login">Вход</a>
-        <a class="btn small" href="/register">Регистрация</a>
+        <a class="btn small light" href="/register">Регистрация</a>
       {{end}}
     </nav>
   </header>
+  {{block "masthead" .}}{{end}}
   <main id="content">
     {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
     {{block "content" .}}{{end}}
   </main>
   <footer class="foot">
     <div class="foot-in">
-      <p><strong>Tropa</strong> — куда пойти с друзьями в Алматы и области.</p>
-      <p class="muted"><a href="/meetups">Встречи</a> · <a href="/help/telegram">Уведомления в Telegram</a> · Карта и места: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
+      <p><strong>tropa</strong> — куда пойти с друзьями в Алматы и области</p>
+      <p><a href="/meetups">Встречи</a> <a href="/help/telegram">Уведомления в Telegram</a> <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
     </div>
   </footer>
   {{block "scripts" .}}{{end}}
 </body>
 </html>
 
-{{/* Карточка встречи в списках: встречи, профиль, страница места. */}}
+{{/* Встреча в списках — «билет»: корешок с датой и сама встреча. */}}
 {{define "meetup_card"}}
-<a class="meetup-card cat-{{.PlaceCategory}}" href="{{.URL}}">
-  <span class="badge {{.Status}}">{{.Status.Label}}</span>
-  <h3>{{.Title}}</h3>
-  <p class="muted"><span class="pin cat-{{.PlaceCategory}}"></span> {{.PlaceName}}</p>
-  <p class="meta">
-    <span>{{when .StartsAt}}</span>
-    <span>{{plural .Going "идёт" "идут" "идут"}} {{.Going}}{{if .Capacity}} из {{.Capacity}}{{end}}</span>
-    {{if .Waiting}}<span>{{.Waiting}} в очереди</span>{{end}}
-    {{if eq .Visibility "friends"}}<span>для друзей</span>{{end}}
-  </p>
+{{$d := ticket .StartsAt}}
+<a class="ticket cat-{{.PlaceCategory}}" href="{{.URL}}">
+  <span class="stub" aria-hidden="true">
+    <span class="stub-day">{{$d.Day}}</span>
+    <span class="stub-month">{{$d.Month}}, {{$d.Weekday}}</span>
+  </span>
+  <span class="ticket-body">
+    <span class="ticket-place"><span class="pin cat-{{.PlaceCategory}}"></span>{{.PlaceName}}</span>
+    <span class="ticket-title">{{.Title}}</span>
+    <span class="ticket-meta">
+      <span class="sr-only">{{when .StartsAt}}</span>
+      <span aria-hidden="true">в {{$d.Time}}</span>
+      <span>{{plural .Going "идёт" "идут" "идут"}} {{.Going}}{{if .Capacity}} из {{.Capacity}}{{end}}</span>
+      {{if .Waiting}}<span>{{.Waiting}} в очереди</span>{{end}}
+      {{if eq .Visibility "friends"}}<span>для друзей</span>{{end}}
+      {{if ne .Status "open"}}<span class="badge {{.Status}}">{{.Status.Label}}</span>{{end}}
+    </span>
+  </span>
 </a>
 {{end}}
