@@ -1,0 +1,17 @@
+{{define "title"}}Подключить Telegram{{end}}
+{{define "content"}}
+<section class="card form wide">
+  <h1>Подключить Telegram</h1>
+  <ol class="steps">
+    <li>Нажмите кнопку ниже — откроется чат с ботом Tropa.</li>
+    <li>В Telegram нажмите <strong>«Запустить»</strong> (или «Start»).</li>
+    <li>Бот ответит «Аккаунт привязан» — готово, можно вернуться в профиль.</li>
+  </ol>
+  <div class="actions">
+    <a class="btn" href="{{.Data}}" target="_blank" rel="noopener">Открыть Telegram</a>
+    <a href="/me">Вернуться в профиль</a>
+  </div>
+  <p class="muted small">Ссылка одноразовая и действует 15 минут. Не пересылайте её: кто её откроет, тот и получит ваши уведомления.
+    Подробнее — <a href="/help/telegram">как работают уведомления</a>.</p>
+</section>
+{{end}}

@@ -13,6 +13,7 @@ import (
 
 	"tropa/internal/auth"
 	"tropa/internal/meetups"
+	"tropa/internal/notify"
 	"tropa/internal/places"
 	"tropa/internal/weather"
 )
@@ -30,6 +31,8 @@ type Services struct {
 	Auth    *auth.Service
 	Meetups *meetups.Service
 	Places  *places.Service
+	// Notify — уведомления в Telegram; nil или без бота — выключены.
+	Notify *notify.Service
 	// Weather — погода для плашки на карте; nil — без погоды.
 	Weather *weather.Client
 }
@@ -38,6 +41,7 @@ type Server struct {
 	cfg     Config
 	auth    *auth.Service
 	meetups *meetups.Service
+	notify  *notify.Service
 	places  *places.Service
 	weather *weather.Client
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
@@ -47,7 +51,7 @@ type Server struct {
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -97,6 +101,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /login", s.login)
 	mux.HandleFunc("POST /logout", s.logout)
 	mux.Handle("GET /me", auth.RequireUser(http.HandlerFunc(s.me)))
+	mux.Handle("POST /me/telegram", auth.RequireUser(http.HandlerFunc(s.linkTelegram)))
+	mux.Handle("POST /me/telegram/off", auth.RequireUser(http.HandlerFunc(s.unlinkTelegram)))
+	mux.HandleFunc("GET /help/telegram", s.telegramHelp)
 
 	mux.HandleFunc("GET /meetups", s.meetupList)
 	mux.Handle("GET /places/{slug}/meetups/new", auth.RequireUser(http.HandlerFunc(s.newMeetup)))

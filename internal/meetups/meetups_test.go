@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -381,5 +382,96 @@ func TestListsAndVisibility(t *testing.T) {
 	*e.now = pub.StartsAt
 	if page, _ := e.s.List(ctx, Filter{Page: 1}); page.Total != 0 {
 		t.Fatalf("прошедшая в списке: %d", page.Total)
+	}
+}
+
+func TestWhen(t *testing.T) {
+	at := func(y, m, d, h, min int) time.Time { return time.Date(y, time.Month(m), d, h, min, 0, 0, Almaty) }
+	year := time.Now().In(Almaty).Year()
+	for _, c := range []struct {
+		got, want string
+	}{
+		{When(at(2027, 3, 6, 18, 30)), "сб, 6 марта 2027, 18:30"},
+		{When(at(year, 1, 1, 9, 5)), weekdaysShort[at(year, 1, 1, 9, 5).Weekday()] + ", 1 января, 09:05"}, // текущий год — без года
+		{When(time.Date(2027, 3, 6, 13, 30, 0, 0, time.UTC)), "сб, 6 марта 2027, 18:30"},                  // UTC → Алматы
+		{Clock(at(2027, 12, 31, 23, 59)), "31 декабря, 23:59"},
+	} {
+		if c.got != c.want {
+			t.Errorf("%q, ждали %q", c.got, c.want)
+		}
+	}
+}
+
+// queued — уведомления пользователя в очереди: вид → текст.
+func (e *env) queued(t *testing.T, u *auth.User) map[string]string {
+	t.Helper()
+	rows, err := e.db.Query(context.Background(), `SELECT kind, text FROM notifications WHERE user_id = $1`, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := map[string]string{}
+	for rows.Next() {
+		var k, text string
+		rows.Scan(&k, &text)
+		out[k] += text
+	}
+	return out
+}
+
+func TestNotifications(t *testing.T) {
+	ctx := context.Background()
+	e := setup(t)
+	e.s.SiteURL = "https://tropa.test"
+	org, a, b, offline := e.user(t), e.user(t), e.user(t), e.user(t)
+	for i, u := range []*auth.User{org, a, b} {
+		if _, err := e.db.Exec(ctx, `UPDATE users SET telegram_chat_id = $2 WHERE id = $1`, u.ID, 100+i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m := e.create(t, org, func(in *Input) { in.Capacity = "2" })
+	e.s.Join(ctx, a, m.ID)
+	e.s.Join(ctx, b, m.ID)
+	e.s.Join(ctx, offline, m.ID)
+
+	// a ушёл — b предложено место, уведомление со ссылкой и сроком
+	if err := e.s.Leave(ctx, a, m.ID); err != nil {
+		t.Fatal(err)
+	}
+	offer := e.queued(t, b)["offer"]
+	if !strings.Contains(offer, "https://tropa.test/m/"+m.Token) || !strings.Contains(offer, "2 марта, 10:00") {
+		t.Fatalf("уведомление о месте: %q", offer)
+	}
+
+	// за 2 часа до конца предложения — напоминание, один раз
+	*e.now = fixedNow.Add(OfferTTL - time.Hour)
+	e.s.Remind(ctx)
+	e.s.Remind(ctx)
+	if q := e.queued(t, b); q["offer_soon"] == "" || strings.Count(q["offer_soon"], "держится") != 1 {
+		t.Fatalf("напоминание о предложении: %q", q["offer_soon"])
+	}
+	e.s.Accept(ctx, b, m.ID)
+
+	// перенос — всем участникам, кроме организатора; без Telegram — не ставится
+	in := FromMeetup(m)
+	in.Time = "20:00"
+	if _, err := e.s.Update(ctx, org, m.ID, in); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(e.queued(t, b)["moved"], "20:00") || e.queued(t, org)["moved"] != "" || len(e.queued(t, offline)) != 0 {
+		t.Fatal("уведомления о переносе")
+	}
+
+	// за сутки — напоминание тем, кто идёт
+	*e.now = time.Date(2027, 3, 5, 21, 0, 0, 0, Almaty)
+	e.s.Remind(ctx)
+	if !strings.Contains(e.queued(t, b)["reminder"], "завтра") || e.queued(t, org)["reminder"] != "" {
+		t.Fatal("напоминание о встрече")
+	}
+
+	if err := e.s.SetStatus(ctx, org, m.ID, Open, Cancelled); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(e.queued(t, b)["cancelled"], "отменили") {
+		t.Fatal("уведомление об отмене")
 	}
 }

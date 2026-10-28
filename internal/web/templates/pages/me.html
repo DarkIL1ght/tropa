@@ -6,6 +6,25 @@
 </section>
 
 {{with .Data}}
+{{if .Telegram}}
+<section class="card telegram">
+  {{if .Linked}}
+  <p><strong>Telegram подключён.</strong> Сюда придут уведомления о свободных местах, переносах и отменах.</p>
+  <form method="post" action="/me/telegram/off" class="inline">
+    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+    <button class="btn ghost">Отключить</button>
+  </form>
+  {{else}}
+  <p><strong>Уведомления в Telegram.</strong> Узнайте сразу, если во встрече освободится место — оно держится за вами только сутки.</p>
+  <form method="post" action="/me/telegram" class="inline">
+    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+    <button class="btn">Подключить Telegram</button>
+  </form>
+  {{end}}
+  <a class="small" href="/help/telegram">Как это работает</a>
+</section>
+{{end}}
+
 <h2>Я участвую</h2>
 {{with .Joined}}
 <ul class="joined">

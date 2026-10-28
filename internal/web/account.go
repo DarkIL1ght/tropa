@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"tropa/internal/auth"
 	"tropa/internal/meetups"
@@ -30,6 +29,7 @@ var flashText = map[string]string{
 	"left":             "Вы больше не участвуете во встрече.",
 	"leave_organizer":  "Организатор не может выйти из своей встречи — её можно отменить.",
 	"offer_gone":       "Предложение места истекло.",
+	"telegram_off":     "Уведомления в Telegram отключены.",
 }
 
 type accountForm struct {
@@ -126,13 +126,21 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 type meView struct {
 	Mine   []*meetups.Meetup
 	Joined []meetups.Joined
-	Now    time.Time
+	// Telegram — уведомления включены на сайте; Linked — подключены у пользователя.
+	Telegram bool
+	Linked   bool
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	u := auth.CurrentUser(r.Context())
-	v := meView{Now: s.meetups.Now()}
+	v := meView{Telegram: s.notify.Enabled()}
 	var err error
+	if v.Telegram {
+		if v.Linked, err = s.notify.Linked(r.Context(), u.ID); err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+	}
 	if v.Mine, err = s.meetups.ByOrganizer(r.Context(), u.ID); err != nil {
 		s.serverError(w, r, err)
 		return

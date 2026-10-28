@@ -200,6 +200,8 @@ var (
 type Service struct {
 	DB  *pgxpool.Pool
 	Now func() time.Time
+	// SiteURL — адрес сайта без / в конце, для ссылок в уведомлениях.
+	SiteURL string
 }
 
 func New(db *pgxpool.Pool) *Service { return &Service{DB: db, Now: time.Now} }
@@ -269,9 +271,16 @@ func (s *Service) Update(ctx context.Context, u *auth.User, id int64, in Input) 
 		if err != nil {
 			return err
 		}
+		moved := !f.startsAt.Equal(m.StartsAt)
+		m.Title, m.StartsAt = f.title, f.startsAt
+		if moved {
+			if err := s.notifyAll(ctx, tx, m, "moved", s.movedText(m)); err != nil {
+				return err
+			}
+		}
 		// мест стало больше — отдаём их очереди
 		m.Capacity = f.capacity
-		return fillSeats(ctx, tx, m, now)
+		return s.fillSeats(ctx, tx, m, now)
 	})
 	if errors.Is(err, ErrInvalidInput) {
 		return errs, err
@@ -300,8 +309,13 @@ func (s *Service) SetStatus(ctx context.Context, u *auth.User, id int64, from, t
 		if !m.Editable(now) {
 			return ErrNotEditable
 		}
-		_, err = tx.Exec(ctx, `UPDATE meetups SET status = $2, updated_at = now() WHERE id = $1`, id, to)
-		return err
+		if _, err = tx.Exec(ctx, `UPDATE meetups SET status = $2, updated_at = now() WHERE id = $1`, id, to); err != nil {
+			return err
+		}
+		if to == Cancelled {
+			return s.notifyAll(ctx, tx, m, "cancelled", s.cancelledText(m))
+		}
+		return nil
 	})
 }
 

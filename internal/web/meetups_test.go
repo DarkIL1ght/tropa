@@ -11,18 +11,10 @@ import (
 	"tropa/internal/places"
 )
 
-func TestFormat(t *testing.T) {
-	at := func(y, m, d, h, min int) time.Time {
-		return time.Date(y, time.Month(m), d, h, min, 0, 0, meetups.Almaty)
-	}
-	year := time.Now().In(meetups.Almaty).Year()
+func TestPlural(t *testing.T) {
 	for _, c := range []struct {
 		got, want string
 	}{
-		{when(at(2027, 3, 6, 18, 30)), "сб, 6 марта 2027, 18:30"},
-		{when(at(year, 1, 1, 9, 5)), weekdaysShort[at(year, 1, 1, 9, 5).Weekday()] + ", 1 января, 09:05"}, // текущий год — без года
-		{when(time.Date(2027, 3, 6, 13, 30, 0, 0, time.UTC)), "сб, 6 марта 2027, 18:30"},                  // UTC → Алматы
-		{clock(at(2027, 12, 31, 23, 59)), "31 декабря, 23:59"},
 		{plural(1, "день", "дня", "дней"), "день"},
 		{plural(3, "день", "дня", "дней"), "дня"},
 		{plural(11, "день", "дня", "дней"), "дней"},

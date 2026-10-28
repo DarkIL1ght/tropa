@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"tropa/internal/auth"
+	"tropa/internal/notify"
 )
 
 // OfferTTL — сколько ждём ответа на предложенное место.
@@ -98,7 +99,7 @@ func (s *Service) Leave(ctx context.Context, u *auth.User, id int64) error {
 		}
 		if p.Status != Waitlist {
 			m.Going--
-			return fillSeats(ctx, tx, m, now)
+			return s.fillSeats(ctx, tx, m, now)
 		}
 		return nil
 	})
@@ -154,7 +155,7 @@ func (s *Service) ExpireOffers(ctx context.Context) (int, error) {
 			n := int(tag.RowsAffected())
 			total += n
 			m.Going -= n
-			return fillSeats(ctx, tx, m, now)
+			return s.fillSeats(ctx, tx, m, now)
 		})
 		if err != nil {
 			return total, err
@@ -166,7 +167,7 @@ func (s *Service) ExpireOffers(ctx context.Context) (int, error) {
 // fillSeats предлагает свободные места очереди по порядку: offered на OfferTTL.
 // m — встреча, заблокированная в tx, с актуальными Going и Capacity.
 // У отменённой и прошедшей встречи очередь не двигается.
-func fillSeats(ctx context.Context, tx pgx.Tx, m *Meetup, now time.Time) error {
+func (s *Service) fillSeats(ctx context.Context, tx pgx.Tx, m *Meetup, now time.Time) error {
 	if m.Status == Cancelled || m.Past(now) {
 		return nil
 	}
@@ -191,6 +192,9 @@ func fillSeats(ctx context.Context, tx pgx.Tx, m *Meetup, now time.Time) error {
 			return err
 		}
 		if err := closeGap(ctx, tx, m.ID, p.Position); err != nil {
+			return err
+		}
+		if err := notify.Enqueue(ctx, tx, userID, "offer", s.offerText(m, now.Add(OfferTTL)), ""); err != nil {
 			return err
 		}
 		m.Going++

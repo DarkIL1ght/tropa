@@ -15,6 +15,10 @@
 //	ADDR            адрес сервера, по умолчанию 127.0.0.1:8080
 //	SECURE_COOKIES  1 — cookie только по HTTPS (за прокси с TLS)
 //	WEATHER_URL     API погоды, по умолчанию Open-Meteo; off — без плашки погоды
+//	SITE_URL        адрес сайта для ссылок в уведомлениях, по умолчанию http://ADDR
+//	TELEGRAM_BOT_TOKEN
+//	                токен бота уведомлений (docs/telegram.md); пусто — без уведомлений
+//	TELEGRAM_API_URL  адрес Bot API, по умолчанию https://api.telegram.org
 package main
 
 import (
@@ -28,6 +32,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -35,6 +40,7 @@ import (
 
 	"tropa/internal/auth"
 	"tropa/internal/meetups"
+	"tropa/internal/notify"
 	"tropa/internal/osm"
 	"tropa/internal/places"
 	"tropa/internal/store"
@@ -216,20 +222,31 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		if err := migrate(ctx, log, pool); err != nil {
 			return err
 		}
+		addr := os.Getenv("ADDR")
+		if addr == "" {
+			addr = "127.0.0.1:8080"
+		}
+		siteURL := strings.TrimRight(os.Getenv("SITE_URL"), "/")
+		if siteURL == "" {
+			siteURL = "http://" + addr
+		}
+
 		authSvc := auth.New(pool)
 		meetupSvc := meetups.New(pool)
+		meetupSvc.SiteURL = siteURL
+		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"},
-			web.Services{Auth: authSvc, Meetups: meetupSvc, Places: places.New(pool), Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
+			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool),
+				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err
 		}
 
 		go purgeSessions(ctx, log, authSvc)
-		go expireOffers(ctx, log, meetupSvc)
-
-		addr := os.Getenv("ADDR")
-		if addr == "" {
-			addr = "127.0.0.1:8080"
+		go meetupJobs(ctx, log, meetupSvc)
+		if notifySvc.Enabled() {
+			go notifySvc.Poll(ctx)
+			go notifySvc.RunDispatch(ctx, 10*time.Second)
 		}
 		hs := &http.Server{
 			Addr:              addr,
@@ -275,9 +292,9 @@ func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 	}
 }
 
-// expireOffers раз в минуту снимает просроченные предложения мест
-// и передаёт места дальше по очереди.
-func expireOffers(ctx context.Context, log *slog.Logger, m *meetups.Service) {
+// meetupJobs раз в минуту снимает просроченные предложения мест (места
+// уходят дальше по очереди) и ставит напоминания в очередь уведомлений.
+func meetupJobs(ctx context.Context, log *slog.Logger, m *meetups.Service) {
 	t := time.NewTicker(time.Minute)
 	defer t.Stop()
 	for {
@@ -286,12 +303,39 @@ func expireOffers(ctx context.Context, log *slog.Logger, m *meetups.Service) {
 		} else if n > 0 {
 			log.Info("сняты просроченные предложения мест", "count", n)
 		}
+		if err := m.Remind(ctx); err != nil && ctx.Err() == nil {
+			log.Warn("напоминания о встречах", "err", err)
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
 		}
 	}
+}
+
+// telegram — сервис уведомлений. Без токена или если бот не отвечает на
+// getMe (неверный токен, нет сети) — уведомления выключены, сайт работает.
+func telegram(ctx context.Context, log *slog.Logger, pool *pgxpool.Pool, token string) *notify.Service {
+	if token == "" {
+		log.Info("уведомления в Telegram выключены: нет TELEGRAM_BOT_TOKEN")
+		return nil
+	}
+	bot := notify.NewBot(token)
+	if u := os.Getenv("TELEGRAM_API_URL"); u != "" {
+		bot.BaseURL = strings.TrimRight(u, "/") // свой Bot API сервер или подделка для проверки
+	}
+	svc := notify.New(pool, bot, log)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	name, err := bot.Username(ctx)
+	if err != nil {
+		log.Error("бот уведомлений недоступен, уведомления выключены", "err", err)
+		return nil
+	}
+	svc.BotName = name
+	log.Info("уведомления в Telegram включены", "bot", "@"+name)
+	return svc
 }
 
 // almatyWeather — погода для центра рамки города (Open-Meteo считает по сетке,

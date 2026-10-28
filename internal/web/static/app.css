@@ -255,3 +255,8 @@ html, body { overflow-x: hidden; }
 .joined li { display: grid; gap: 4px; padding: 14px 18px; }
 .joined li.offer { border-color: var(--accent); }
 .popup-meetups { font-weight: 600; }
+.telegram { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 16px; }
+.telegram p { flex: 1 1 320px; margin: 0; }
+.steps { padding-left: 22px; display: grid; gap: 6px; }
+.help h2 { margin: 20px 0 8px; font-size: 18px; }
+.help ul { padding-left: 22px; display: grid; gap: 6px; }
