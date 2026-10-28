@@ -5,7 +5,7 @@
 {{define "content"}}
 {{with .Data.Place}}
 <article class="place">
-  <p><a href="/">← К карте</a></p>
+  <a class="back" href="/">← К карте</a><br>
   <span class="badge cat-{{.Category}}">{{.Category.Label}} · {{.Kind.Label}}</span>
   <h1>{{.Name}}</h1>
   {{with .Address}}<p class="lead">{{.}}</p>{{end}}
@@ -34,7 +34,7 @@
   {{with $.Data.Meetups}}
   <div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
   {{else}}
-  <p class="muted">Открытых встреч здесь пока нет — соберите первую.</p>
+  <div class="empty"><p>Открытых встреч здесь пока нет — соберите первую.</p></div>
   {{end}}
 
   {{if $.Data.OSMURL}}

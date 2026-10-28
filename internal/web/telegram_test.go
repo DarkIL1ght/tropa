@@ -62,7 +62,7 @@ func TestTelegramProfile(t *testing.T) {
 func TestTelegramDisabled(t *testing.T) {
 	ts := newTestServer(t)
 	c := signup(t, ts.URL, "a@tropa.kz")
-	if _, body := c.get("/me"); strings.Contains(body, "Telegram") {
+	if _, body := c.get("/me"); strings.Contains(body, `class="card telegram"`) {
 		t.Fatal("без бота блока Telegram в профиле быть не должно")
 	}
 	if resp := c.post("/me", "/me/telegram", url.Values{}); resp.StatusCode != http.StatusSeeOther {

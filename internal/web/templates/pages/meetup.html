@@ -2,7 +2,7 @@
 {{define "content"}}
 {{with .Data.Meetup}}
 <article class="meetup">
-  <p><a href="/places/{{.PlaceSlug}}">← {{.PlaceName}}</a></p>
+  <a class="back" href="/places/{{.PlaceSlug}}">← {{.PlaceName}}</a><br>
   <span class="badge {{if $.Data.Past}}past{{else}}{{.Status}}{{end}}">{{if $.Data.Past}}Прошла{{else}}{{.Status.Label}}{{end}}</span>
   {{if eq .Visibility "friends"}}<span class="badge">Для друзей</span>{{end}}
   <h1>{{.Title}}</h1>

@@ -59,12 +59,13 @@ func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
 }
 
 var funcs = template.FuncMap{
-	"date":   func(t time.Time) string { return t.Format("02.01.2006") },
-	"when":   when,
-	"clock":  clock,
-	"plural": plural,
-	"add":    func(a, b int) int { return a + b },
-	"sub":    func(a, b int) int { return a - b },
+	"date":    func(t time.Time) string { return t.Format("02.01.2006") },
+	"when":    when,
+	"clock":   clock,
+	"plural":  plural,
+	"initial": initial,
+	"add":     func(a, b int) int { return a + b },
+	"sub":     func(a, b int) int { return a - b },
 }
 
 // loadTemplates собирает каждую страницу как layout + своя страница,
@@ -119,6 +120,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /m/{token}/join", auth.RequireUser(http.HandlerFunc(s.joinMeetup)))
 	mux.Handle("POST /m/{token}/leave", auth.RequireUser(http.HandlerFunc(s.leaveMeetup)))
 	mux.Handle("POST /m/{token}/accept", auth.RequireUser(http.HandlerFunc(s.acceptOffer)))
+	// всё остальное — своя страница 404, а не стандартный текст
+	mux.HandleFunc("/", s.notFound)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
 	return s.recoverer(securityHeaders(s.auth.Middleware(s.cfg.Secure)(mux)))

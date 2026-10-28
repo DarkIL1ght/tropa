@@ -153,3 +153,14 @@ func TestCSRFRejected(t *testing.T) {
 		t.Fatalf("подделанный CSRF: %d, ждали 403", resp.StatusCode)
 	}
 }
+
+func TestNotFoundPage(t *testing.T) {
+	ts := newTestServer(t)
+	code, body := newClient(t, ts.URL).get("/no/such/page")
+	if code != http.StatusNotFound || !strings.Contains(body, "Такой тропы нет") {
+		t.Fatalf("404: %d", code)
+	}
+	if code, _ := newClient(t, ts.URL).get("/static/favicon.svg"); code != 200 {
+		t.Fatalf("фавикон: %d", code)
+	}
+}

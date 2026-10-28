@@ -2,7 +2,7 @@
 {{define "content"}}
 {{with .Data}}
 <form method="post" action="/me/name" class="card form">
-  <p class="small"><a href="/me">← Профиль</a></p>
+  <a class="back" href="/me">← Профиль</a>
   <h1>Настройки</h1>
   <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
   <label>Имя

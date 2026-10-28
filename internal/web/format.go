@@ -1,12 +1,24 @@
 package web
 
-import "tropa/internal/meetups"
+import (
+	"strings"
+
+	"tropa/internal/meetups"
+)
 
 // when и clock — время по Алматы, общие с текстами уведомлений.
 var (
 	when  = meetups.When
 	clock = meetups.Clock
 )
+
+// initial — первая буква имени для аватара-кружка.
+func initial(name string) string {
+	for _, r := range strings.TrimSpace(name) {
+		return strings.ToUpper(string(r))
+	}
+	return "?"
+}
 
 // plural выбирает форму слова по числу: plural(n, "день", "дня", "дней").
 func plural(n int, one, few, many string) string {

@@ -27,7 +27,7 @@
 {{with .Page.Meetups}}
 <div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
 {{else}}
-<p class="empty card">Встреч пока нет. Выберите место на карте и соберите свою.</p>
+<div class="empty"><p>Встреч пока нет. Выберите место на карте и соберите свою.</p></div>
 {{end}}
 
 {{if gt .Page.TotalPages 1}}

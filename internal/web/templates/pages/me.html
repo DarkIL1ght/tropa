@@ -1,10 +1,20 @@
 {{define "title"}}Профиль{{end}}
 {{define "content"}}
 <section class="card">
-  <h1>{{.User.Name}}</h1>
-  <p class="muted">{{.User.Email}} · с нами с {{date .User.CreatedAt}}</p>
-  {{with .Data}}<p>Собрано встреч: <strong>{{.Stats.Organized}}</strong> · посещено: <strong>{{.Stats.Attended}}</strong></p>{{end}}
-  <p class="actions"><a class="btn ghost" href="/me/settings">Настройки</a> <a class="btn ghost" href="/u/{{.User.ID}}">Моя публичная страница</a></p>
+  <div class="profile-head">
+    <span class="avatar" aria-hidden="true">{{initial .User.Name}}</span>
+    <div>
+      <h1>{{.User.Name}}</h1>
+      <p class="muted">{{.User.Email}} · с нами с {{date .User.CreatedAt}}</p>
+    </div>
+  </div>
+  {{with .Data}}
+  <dl class="stats">
+    <div><dt>Собрано встреч</dt><dd>{{.Stats.Organized}}</dd></div>
+    <div><dt>Посещено встреч</dt><dd>{{.Stats.Attended}}</dd></div>
+  </dl>
+  {{end}}
+  <div class="actions profile-actions"><a class="btn ghost" href="/me/settings">Настройки</a> <a class="btn ghost" href="/u/{{.User.ID}}">Моя публичная страница</a></div>
 </section>
 
 {{with .Data}}
@@ -39,7 +49,7 @@
   {{end}}
 </ul>
 {{else}}
-<p class="muted">Вы пока никуда не записаны. <a href="/meetups">Посмотреть встречи</a></p>
+<div class="empty"><p>Вы пока никуда не записаны. <a href="/meetups">Посмотреть встречи</a></p></div>
 {{end}}
 
 <div class="page-head">
@@ -49,7 +59,7 @@
 {{with .Mine}}
 <div class="grid">{{range .}}{{template "meetup_card" .}}{{end}}</div>
 {{else}}
-<p class="muted">Вы ещё не собирали встреч. Выберите место на карте и нажмите «Собрать встречу».</p>
+<div class="empty"><p>Вы ещё не собирали встреч. Выберите место на карте и нажмите «Собрать встречу».</p></div>
 {{end}}
 {{end}}
 {{end}}

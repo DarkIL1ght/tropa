@@ -4,17 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{block "title" .}}Tropa{{end}} · Tropa</title>
+  <meta name="theme-color" content="#24614a">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/app.css">
   {{block "head" .}}{{end}}
 </head>
 <body class="{{block "body_class" .}}{{end}}">
+  <a class="skip" href="#content">К содержимому</a>
   <header class="top">
-    <a class="logo" href="/">Tropa</a>
-    <nav>
+    <a class="logo" href="/" aria-label="Tropa — на главную">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M2 26 12.5 9l5 8 3.5-5L30 26Z" fill="currentColor"/><path d="m9.8 13.4 2.7-4.4 2.7 4.2-1.35-.8-1.35 1.2-1.35-1.2Z" class="logo-snow"/></svg>
+      <span>Tropa</span>
+    </a>
+    <nav aria-label="Основное меню">
       <a href="/">Карта</a>
       <a class="nav-secondary" href="/meetups">Встречи</a>
       {{if .User}}
-        <a href="/me">{{.User.Name}}</a>
+        <a class="nav-user" href="/me"><span class="avatar small" aria-hidden="true">{{initial .User.Name}}</span><span class="nav-name">{{.User.Name}}</span></a>
         <form method="post" action="/logout" class="inline">
           <input type="hidden" name="csrf_token" value="{{.CSRF}}">
           <button class="link">Выйти</button>
@@ -25,17 +31,23 @@
       {{end}}
     </nav>
   </header>
-  <main>
+  <main id="content">
     {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
     {{block "content" .}}{{end}}
   </main>
+  <footer class="foot">
+    <div class="foot-in">
+      <p><strong>Tropa</strong> — куда пойти с друзьями в Алматы и области.</p>
+      <p class="muted"><a href="/meetups">Встречи</a> · <a href="/help/telegram">Уведомления в Telegram</a> · Карта и места: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© участники OpenStreetMap</a></p>
+    </div>
+  </footer>
   {{block "scripts" .}}{{end}}
 </body>
 </html>
 
 {{/* Карточка встречи в списках: встречи, профиль, страница места. */}}
 {{define "meetup_card"}}
-<a class="meetup-card" href="{{.URL}}">
+<a class="meetup-card cat-{{.PlaceCategory}}" href="{{.URL}}">
   <span class="badge {{.Status}}">{{.Status.Label}}</span>
   <h3>{{.Title}}</h3>
   <p class="muted"><span class="pin cat-{{.PlaceCategory}}"></span> {{.PlaceName}}</p>
