@@ -43,6 +43,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/friends"
 	"tropa/internal/meetups"
 	"tropa/internal/notify"
 	"tropa/internal/osm"
@@ -267,9 +268,11 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		authSvc := auth.New(pool)
 		meetupSvc := meetups.New(pool)
 		meetupSvc.SiteURL = siteURL
+		friendSvc := friends.New(pool)
+		friendSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL},
-			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool),
+			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool), Friends: friendSvc,
 				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err

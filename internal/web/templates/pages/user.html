@@ -7,8 +7,25 @@
     <div>
       <h1>{{.Person.Name}}</h1>
       <p class="lead">С нами с {{date .Person.CreatedAt}}</p>
-      <p class="tally"><span>Собрано встреч: <strong>{{.Stats.Organized}}</strong></span> <span>Посещено: <strong>{{.Stats.Attended}}</strong></span></p>
+      <p class="tally"><span>Собрано встреч: <strong>{{.Stats.Organized}}</strong></span> <span>Посещено: <strong>{{.Stats.Attended}}</strong></span> <span>Друзей: <strong>{{.Friends}}</strong></span></p>
     </div>
+    {{if and $.User (not .Own)}}
+    <div class="actions profile-actions">
+      {{$id := .Person.ID}}
+      {{if eq .Friend "friends"}}
+        <span class="badge">В друзьях</span>
+        {{template "friend_button" (dict "ID" $id "Action" "remove" "Label" "Удалить из друзей" "CSRF" $.CSRF)}}
+      {{else if eq .Friend "incoming"}}
+        {{template "friend_button" (dict "ID" $id "Action" "accept" "Label" "Принять заявку" "CSRF" $.CSRF)}}
+        {{template "friend_button" (dict "ID" $id "Action" "remove" "Label" "Отклонить" "CSRF" $.CSRF)}}
+      {{else if eq .Friend "outgoing"}}
+        <span class="badge">Заявка отправлена</span>
+        {{template "friend_button" (dict "ID" $id "Action" "remove" "Label" "Отменить" "CSRF" $.CSRF)}}
+      {{else}}
+        {{template "friend_button" (dict "ID" $id "Action" "add" "Label" "Добавить в друзья" "CSRF" $.CSRF)}}
+      {{end}}
+    </div>
+    {{end}}
   </div>
 </section>
 {{end}}
@@ -24,4 +41,11 @@
 <div class="empty"><p>Предстоящих открытых встреч нет.</p></div>
 {{end}}
 {{end}}
+{{end}}
+{{define "friend_button"}}
+<form method="post" action="/u/{{.ID}}/friend" class="inline">
+  <input type="hidden" name="csrf_token" value="{{.CSRF}}">
+  <input type="hidden" name="action" value="{{.Action}}">
+  <button class="btn light{{if ne .Action "add"}}{{if ne .Action "accept"}} ghost{{end}}{{end}}">{{.Label}}</button>
+</form>
 {{end}}

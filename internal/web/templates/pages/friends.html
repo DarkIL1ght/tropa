@@ -1,0 +1,78 @@
+{{define "title"}}Друзья{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head first">
+  <h1>Друзья</h1>
+</div>
+
+{{with .Incoming}}
+<section class="card friend-requests">
+  <h2>Заявки в друзья</h2>
+  <ul class="friend-list">
+    {{range .}}
+    <li>
+      <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
+      <a href="/u/{{.ID}}">{{.Name}}</a>
+      <span class="friend-actions">
+        <form method="post" action="/u/{{.ID}}/friend" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input type="hidden" name="action" value="accept">
+          <input type="hidden" name="next" value="/friends">
+          <button class="btn small">Принять</button>
+        </form>
+        <form method="post" action="/u/{{.ID}}/friend" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input type="hidden" name="action" value="remove">
+          <input type="hidden" name="next" value="/friends">
+          <button class="btn small ghost">Отклонить</button>
+        </form>
+      </span>
+    </li>
+    {{end}}
+  </ul>
+</section>
+{{end}}
+
+<h2>Встречи друзей</h2>
+{{with .Meetups}}
+<div class="tickets">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+{{else}}
+<div class="empty"><p>Друзья пока ничего не собирают. Здесь будут их встречи — и открытые, и «для друзей».</p></div>
+{{end}}
+
+<h2>Мои друзья{{with .Friends}} · {{len .}}{{end}}</h2>
+{{with .Friends}}
+<ul class="friend-list">
+  {{range .}}
+  <li>
+    <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
+    <a href="/u/{{.ID}}">{{.Name}}</a>
+    <span class="muted small">с {{date .Since}}</span>
+  </li>
+  {{end}}
+</ul>
+{{else}}
+<div class="empty">
+  <p>Друзей пока нет. Откройте страницу человека — например, из списка участников встречи — и нажмите «Добавить в друзья».</p>
+</div>
+{{end}}
+
+{{with .Outgoing}}
+<h2>Ждут ответа</h2>
+<ul class="friend-list">
+  {{range .}}
+  <li>
+    <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
+    <a href="/u/{{.ID}}">{{.Name}}</a>
+    <form method="post" action="/u/{{.ID}}/friend" class="inline">
+      <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="next" value="/friends">
+      <button class="link small">Отменить заявку</button>
+    </form>
+  </li>
+  {{end}}
+</ul>
+{{end}}
+{{end}}
+{{end}}

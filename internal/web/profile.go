@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"tropa/internal/auth"
+	"tropa/internal/friends"
 	"tropa/internal/meetups"
 )
 
@@ -102,6 +103,9 @@ type userView struct {
 	Stats    meetups.Stats
 	Upcoming []*meetups.Meetup
 	Own      bool // смотрит сам владелец
+	// Friend — отношение вошедшего к человеку; Friends — число друзей человека.
+	Friend  friends.Status
+	Friends int
 }
 
 // showUser — публичная страница пользователя: без email и без встреч «для друзей».
@@ -123,6 +127,15 @@ func (s *Server) showUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if me := auth.CurrentUser(r.Context()); me != nil && me.ID == id {
 		v.Own = true
+	} else if me != nil {
+		if v.Friend, err = s.friends.Status(r.Context(), me.ID, id); err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+	}
+	if v.Friends, _, err = s.friends.Counts(r.Context(), id); err != nil {
+		s.serverError(w, r, err)
+		return
 	}
 	if v.Stats, err = s.meetups.Stats(r.Context(), id); err != nil {
 		s.serverError(w, r, err)

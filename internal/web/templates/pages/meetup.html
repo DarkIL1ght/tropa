@@ -84,7 +84,7 @@
   <h2>Участники</h2>
   <ol class="people">
     {{range $.Data.Participants}}
-    <li><span class="avatar small" aria-hidden="true">{{initial .Name}}</span><a href="/u/{{.UserID}}">{{.Name}}</a>{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
+    <li><span class="avatar small" aria-hidden="true">{{initial .Name}}</span><a href="/u/{{.UserID}}">{{.Name}}</a>{{if index $.Data.FriendIDs .UserID}} <span class="friend-tag">друг</span>{{end}}{{if eq .UserID $.Data.Meetup.OrganizerID}} <span class="muted">— организатор</span>{{end}}
       {{if eq .Status "waitlist"}}<span class="muted">— в очереди, {{.Position}}</span>{{else if eq .Status "offered"}}<span class="muted">— место предложено</span>{{end}}</li>
     {{end}}
   </ol>
@@ -125,7 +125,7 @@
   <label>Ссылка на встречу
     <input readonly value="{{$.Data.ShareURL}}" class="share">
   </label>
-  {{if eq .Visibility "friends"}}<p class="muted small">Встречу «для друзей» видят только те, у кого есть эта ссылка.</p>{{end}}
+  {{if eq .Visibility "friends"}}<p class="muted small">Встречу «для друзей» видят ваши друзья в Tropa (раздел «Друзья») и все, у кого есть эта ссылка. На карте и в общем списке её нет.</p>{{end}}
   {{if $.Data.Editable}}
   <div class="actions">
     <a class="btn ghost" href="{{.URL}}/edit">Редактировать</a>

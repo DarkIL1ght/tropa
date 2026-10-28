@@ -36,6 +36,11 @@ var flashText = map[string]string{
 	"leave_organizer":  "Организатор не может выйти из своей встречи — её можно отменить.",
 	"offer_gone":       "Предложение места истекло.",
 	"telegram_off":     "Уведомления в Telegram отключены.",
+
+	"friend_requested": "Заявка отправлена. Когда её примут, вы станете друзьями.",
+	"friend_added":     "Теперь вы друзья!",
+	"friend_removed":   "Готово.",
+	"friend_stale":     "Заявка уже не актуальна — вот как сейчас.",
 }
 
 type accountForm struct {
@@ -149,6 +154,8 @@ type meView struct {
 	// Telegram — уведомления включены на сайте; Linked — подключены у пользователя.
 	Telegram bool
 	Linked   bool
+	// Incoming — входящие заявки в друзья.
+	Incoming int
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +167,10 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 			s.serverError(w, r, err)
 			return
 		}
+	}
+	if _, v.Incoming, err = s.friends.Counts(r.Context(), u.ID); err != nil {
+		s.serverError(w, r, err)
+		return
 	}
 	if v.Stats, err = s.meetups.Stats(r.Context(), u.ID); err != nil {
 		s.serverError(w, r, err)

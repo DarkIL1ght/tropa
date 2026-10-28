@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/friends"
 	"tropa/internal/meetups"
 	"tropa/internal/notify"
 	"tropa/internal/places"
@@ -38,6 +39,8 @@ type Services struct {
 	Places  *places.Service
 	// Notify — уведомления в Telegram; nil или без бота — выключены.
 	Notify *notify.Service
+	// Friends — дружба между пользователями.
+	Friends *friends.Service
 	// Weather — погода для плашки на карте; nil — без погоды.
 	Weather *weather.Client
 }
@@ -47,6 +50,7 @@ type Server struct {
 	auth    *auth.Service
 	meetups *meetups.Service
 	notify  *notify.Service
+	friends *friends.Service
 	places  *places.Service
 	weather *weather.Client
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
@@ -58,7 +62,7 @@ type Server struct {
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), chat: newHub(), log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, friends: svc.Friends, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), chat: newHub(), log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -76,6 +80,14 @@ var funcs = template.FuncMap{
 	"lower":   func(s string) string { return strings.ToLower(s) },
 	"add":     func(a, b int) int { return a + b },
 	"sub":     func(a, b int) int { return a - b },
+	// dict — параметры для вложенного шаблона: dict "ключ" значение …
+	"dict": func(kv ...any) map[string]any {
+		m := make(map[string]any, len(kv)/2)
+		for i := 0; i+1 < len(kv); i += 2 {
+			m[kv[i].(string)] = kv[i+1]
+		}
+		return m
+	},
 }
 
 // loadTemplates собирает каждую страницу как layout + своя страница,
@@ -124,6 +136,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /me/password", auth.RequireUser(http.HandlerFunc(s.changePassword)))
 	mux.Handle("POST /me/appearance", auth.RequireUser(http.HandlerFunc(s.setAppearance)))
 	mux.HandleFunc("GET /u/{id}", s.showUser)
+	mux.Handle("POST /u/{id}/friend", auth.RequireUser(http.HandlerFunc(s.friendAction)))
+	mux.Handle("GET /friends", auth.RequireUser(http.HandlerFunc(s.friendsPage)))
 
 	mux.HandleFunc("GET /meetups", s.meetupList)
 	mux.Handle("GET /places/{slug}/meetups/new", auth.RequireUser(http.HandlerFunc(s.newMeetup)))

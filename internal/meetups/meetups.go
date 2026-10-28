@@ -75,7 +75,7 @@ const (
 
 var Visibilities = []Visibility{Public, Friends}
 
-var visibilityLabels = map[Visibility]string{Public: "Открытая — видна всем на карте", Friends: "Для друзей — только по ссылке"}
+var visibilityLabels = map[Visibility]string{Public: "Открытая — видна всем на карте", Friends: "Для друзей — видят ваши друзья в Tropa и все, у кого есть ссылка"}
 
 func (v Visibility) Label() string { return visibilityLabels[v] }
 

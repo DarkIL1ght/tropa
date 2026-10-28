@@ -9,6 +9,7 @@
       {{with .Data}}<p class="tally"><span>Собрано встреч: <strong>{{.Stats.Organized}}</strong></span> <span>Посещено: <strong>{{.Stats.Attended}}</strong></span></p>{{end}}
     </div>
     <div class="actions profile-actions">
+      <a class="btn light ghost" href="/friends">Друзья{{with .Data}}{{with .Incoming}} · заявок: {{.}}{{end}}{{end}}</a>
       <a class="btn light ghost" href="/me/settings">Настройки</a>
       <a class="btn light ghost" href="/u/{{.User.ID}}">Публичная страница</a>
       {{if .User.IsAdmin}}<a class="btn light ghost" href="/admin">Админка</a>{{end}}

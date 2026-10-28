@@ -148,6 +148,17 @@ func (s *Service) ByOrganizer(ctx context.Context, userID int64) ([]*Meetup, err
 		` WHERE m.organizer_id = $1 ORDER BY m.starts_at DESC, m.id DESC`, userID)
 }
 
+// ByFriends — предстоящие встречи, которые собирают друзья пользователя,
+// включая «для друзей»: ради этого дружба и нужна. Ближайшие сверху.
+func (s *Service) ByFriends(ctx context.Context, userID int64) ([]*Meetup, error) {
+	return s.collect(ctx, `SELECT `+meetupColumns+meetupFrom+`
+		WHERE m.status <> 'cancelled' AND m.starts_at > $1
+		  AND m.organizer_id IN (
+		      SELECT CASE WHEN f.user_id = $2 THEN f.friend_id ELSE f.user_id END
+		        FROM friendships f WHERE (f.user_id = $2 OR f.friend_id = $2) AND f.status = 'accepted')
+		ORDER BY m.starts_at, m.id LIMIT 50`, s.Now(), userID)
+}
+
 // Recent — последние созданные встречи любой видимости и статуса (для админки).
 func (s *Service) Recent(ctx context.Context, limit int) ([]*Meetup, error) {
 	return s.collect(ctx, `SELECT `+meetupColumns+meetupFrom+` ORDER BY m.created_at DESC, m.id DESC LIMIT $1`, limit)
