@@ -1,0 +1,7 @@
+# Caddy сам получает и продлевает сертификат Let's Encrypt для DOMAIN.
+# Остальные заголовки безопасности (CSP, Referrer-Policy и т. д.) ставит само приложение.
+{$DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy app:8080
+}

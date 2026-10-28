@@ -10,6 +10,8 @@ RUN CGO_ENABLED=0 go build -trimpath -tags timetzdata -ldflags="-s -w" -o /out/t
 # Запуск: минимальный образ без shell, от непривилегированного пользователя.
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/tropa /tropa
+# Места для `tropa seed /data/places` на сервере
+COPY data/places /data/places
 ENV ADDR=0.0.0.0:8080
 EXPOSE 8080
 ENTRYPOINT ["/tropa"]

@@ -1,0 +1,57 @@
+# Продакшн на VPS: Caddy (HTTPS) → Tropa → PostgreSQL. Инструкция — docs/deploy.md.
+#   docker compose -f compose.prod.yml --env-file .env.prod up -d --build
+# Наружу открыт только Caddy (80/443); база и приложение — во внутренней сети.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: tropa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env.prod}
+      POSTGRES_DB: tropa
+    volumes:
+      - tropa-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tropa"]
+      interval: 2s
+      retries: 15
+    restart: unless-stopped
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://tropa:${POSTGRES_PASSWORD}@db:5432/tropa?sslmode=disable
+      SECURE_COOKIES: "1"
+      SITE_URL: https://${DOMAIN:?задайте DOMAIN в .env.prod}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    restart: unless-stopped
+    logging: *logging
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - app
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  tropa-db:
+  caddy-data:
+  caddy-config:
