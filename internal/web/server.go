@@ -52,12 +52,13 @@ type Server struct {
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
 	now    func() time.Time
 	limits *limits
+	chat   *hub
 	log    *slog.Logger
 	pages  map[string]*template.Template
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), chat: newHub(), log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -134,6 +135,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /m/{token}/join", auth.RequireUser(http.HandlerFunc(s.joinMeetup)))
 	mux.Handle("POST /m/{token}/leave", auth.RequireUser(http.HandlerFunc(s.leaveMeetup)))
 	mux.Handle("POST /m/{token}/accept", auth.RequireUser(http.HandlerFunc(s.acceptOffer)))
+	mux.Handle("POST /m/{token}/messages", auth.RequireUser(http.HandlerFunc(s.postMessage)))
+	mux.Handle("GET /m/{token}/stream", auth.RequireUser(http.HandlerFunc(s.stream)))
 	mux.Handle("GET /admin", s.requireAdmin(s.adminUsers))
 	mux.Handle("POST /admin/users/{id}/reset", s.requireAdmin(s.adminReset))
 	mux.Handle("POST /admin/users/{id}/role", s.requireAdmin(s.adminRole))

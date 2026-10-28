@@ -68,6 +68,7 @@ type limits struct {
 	register              *limiter
 	password              *limiter
 	forgotIP, forgotEmail *limiter
+	chat                  *limiter
 }
 
 func newLimits() *limits {
@@ -79,6 +80,8 @@ func newLimits() *limits {
 		// сброс шлёт сообщения в Telegram — не даём спамить чужой аккаунт
 		forgotIP:    newLimiter(5, 10*time.Minute),
 		forgotEmail: newLimiter(3, 10*time.Minute),
+		// чат: короткая пачка можно, поток — не чаще раза в секунду
+		chat: newLimiter(5, time.Second),
 	}
 }
 

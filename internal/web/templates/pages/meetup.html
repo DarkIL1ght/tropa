@@ -88,6 +88,35 @@
       {{if eq .Status "waitlist"}}<span class="muted">— в очереди, {{.Position}}</span>{{else if eq .Status "offered"}}<span class="muted">— место предложено</span>{{end}}</li>
     {{end}}
   </ol>
+
+  {{if $.Data.Chat}}
+  <section class="chat" id="chat" data-stream="{{.URL}}/stream" data-me="{{$.User.ID}}">
+    <h2>Чат встречи</h2>
+    {{/* без пробелов между тегами: пустой список должен совпадать с :empty */}}
+    <ol class="messages" aria-live="polite">{{range $.Data.Messages -}}
+      <li class="msg{{if eq .UserID $.User.ID}} mine{{end}}" data-id="{{.ID}}">
+        <span class="msg-head"><a href="/u/{{.UserID}}">{{.Name}}</a> <time datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{clock .CreatedAt}}</time></span>
+        <span class="msg-body">{{.Body}}</span>
+      </li>
+    {{- end}}</ol>
+    <p class="chat-empty muted"{{if $.Data.Messages}} hidden{{end}}>Сообщений пока нет — договоритесь, где встретиться и что взять с собой.</p>
+    {{if $.Data.CanPost}}
+    <form method="post" action="{{.URL}}/messages" class="chat-form">
+      <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+      <textarea name="body" rows="2" maxlength="{{$.Data.MaxChat}}" required placeholder="Сообщение участникам" aria-label="Сообщение"></textarea>
+      <button class="btn">Отправить</button>
+      <p class="chat-error err" role="alert" hidden></p>
+    </form>
+    <p class="muted small">Участникам с подключённым Telegram придёт уведомление — не чаще раза в 15 минут.</p>
+    {{else}}
+    <p class="muted small">Вы видите чат как админ — писать могут только участники.</p>
+    {{end}}
+  </section>
+  {{else if $.Data.Me}}
+  <p class="muted">Чат откроется, когда для вас освободится место.</p>
+  {{else if $.User}}
+  <p class="muted">Чат встречи — для участников: возьмите билет, чтобы договориться с компанией.</p>
+  {{end}}
 </article>
 
 {{if $.Data.CanManage}}
@@ -114,3 +143,4 @@
 {{end}}
 {{end}}
 {{end}}
+{{define "scripts"}}{{if .Data.Chat}}<script src="/static/chat.js"></script>{{end}}{{end}}

@@ -289,6 +289,8 @@ func serve(ctx context.Context, log *slog.Logger) error {
 			WriteTimeout:      30 * time.Second,
 			IdleTimeout:       2 * time.Minute,
 		}
+		// открытые потоки чата (SSE) закрываем сами, иначе Shutdown ждёт их до таймаута
+		hs.RegisterOnShutdown(srv.Shutdown)
 		errc := make(chan error, 1)
 		go func() {
 			log.Info("сервер запущен", "addr", "http://"+addr)

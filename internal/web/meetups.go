@@ -127,6 +127,11 @@ type meetupView struct {
 	Past         bool
 	Editable     bool
 	ShareURL     string
+	// Чат: Chat — виден (участник или админ), CanPost — можно писать.
+	Chat     bool
+	CanPost  bool
+	Messages []meetups.Message
+	MaxChat  int
 }
 
 func (s *Server) showMeetup(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +153,15 @@ func (s *Server) showMeetup(w http.ResponseWriter, r *http.Request) {
 				v.Me = &v.Participants[i]
 			}
 		}
+	}
+	v.CanPost = meetups.CanChat(v.Me)
+	v.Chat = v.CanPost || u.IsAdmin()
+	if v.Chat {
+		if v.Messages, err = s.meetups.Messages(r.Context(), m.ID, 0); err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+		v.MaxChat = meetups.MaxMessage
 	}
 	if v.CanManage {
 		scheme := "http"
