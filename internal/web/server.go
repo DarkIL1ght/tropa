@@ -134,6 +134,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /m/{token}/join", auth.RequireUser(http.HandlerFunc(s.joinMeetup)))
 	mux.Handle("POST /m/{token}/leave", auth.RequireUser(http.HandlerFunc(s.leaveMeetup)))
 	mux.Handle("POST /m/{token}/accept", auth.RequireUser(http.HandlerFunc(s.acceptOffer)))
+	mux.Handle("GET /admin", s.requireAdmin(s.adminUsers))
+	mux.Handle("POST /admin/users/{id}/reset", s.requireAdmin(s.adminReset))
+	mux.Handle("POST /admin/users/{id}/role", s.requireAdmin(s.adminRole))
+	mux.Handle("GET /admin/meetups", s.requireAdmin(s.adminMeetups))
 	// всё остальное — своя страница 404, а не стандартный текст
 	mux.HandleFunc("/", s.notFound)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })

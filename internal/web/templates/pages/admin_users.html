@@ -1,0 +1,69 @@
+{{define "title"}}Админка — пользователи{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Админка</h1>
+  <nav class="admin-tabs" aria-label="Разделы админки">
+    <a href="/admin" aria-current="page">Пользователи</a>
+    <a href="/admin/meetups">Встречи</a>
+  </nav>
+</div>
+<p class="tally"><span>Пользователей: <strong>{{.Stats.Users}}</strong></span> <span>За неделю: <strong>{{.Stats.NewWeek}}</strong></span> <span>С Telegram: <strong>{{.Stats.Telegram}}</strong></span></p>
+
+{{with .Error}}<p class="note err">{{.}}</p>{{end}}
+{{if .Reset}}
+<section class="card admin-reset">
+  <p><strong>Ссылка для сброса пароля — {{.ResetName}}.</strong> Отправьте её человеку в личку. Действует сутки, сработает один раз; старые ссылки больше не работают.</p>
+  <input type="text" readonly value="{{.Reset}}" aria-label="Ссылка для сброса пароля">
+  <p class="muted small">Кто получит ссылку, сможет войти в этот аккаунт — не отправляйте её никому, кроме владельца.</p>
+</section>
+{{end}}
+
+<form method="get" action="/admin" class="admin-search">
+  <input type="search" name="q" value="{{.Query}}" placeholder="Поиск по email или имени" aria-label="Поиск пользователей">
+  <button class="btn ghost">Найти</button>
+  {{if .Query}}<a href="/admin">Сбросить</a>{{end}}
+</form>
+
+{{if .Users}}
+<div class="admin-table-wrap">
+<table class="admin-table">
+  <thead>
+    <tr><th>Пользователь</th><th>Роль</th><th>Telegram</th><th>Встреч</th><th>Регистрация</th><th>Был</th><th></th></tr>
+  </thead>
+  <tbody>
+  {{range .Users}}
+    <tr>
+      <td><a href="/u/{{.ID}}">{{.Name}}</a><br><span class="muted small">{{.Email}}</span></td>
+      <td>{{if eq .Role "admin"}}<strong>админ</strong>{{else}}пользователь{{end}}</td>
+      <td>{{if .Telegram}}да{{else}}<span class="muted">нет</span>{{end}}</td>
+      <td>{{.Organized}}</td>
+      <td>{{date .CreatedAt}}</td>
+      <td>{{with .LastSeen}}{{date .}}{{else}}<span class="muted">—</span>{{end}}</td>
+      <td class="admin-actions">
+        <form method="post" action="/admin/users/{{.ID}}/reset" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <button class="btn small ghost">Ссылка сброса</button>
+        </form>
+        <form method="post" action="/admin/users/{{.ID}}/role" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          {{if eq .Role "admin"}}
+          <input type="hidden" name="role" value="user">
+          <button class="btn small ghost">Снять админа</button>
+          {{else}}
+          <input type="hidden" name="role" value="admin">
+          <button class="btn small ghost">Сделать админом</button>
+          {{end}}
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{if ge (len .Users) .Limit}}<p class="muted small">Показаны последние {{.Limit}} — уточните поиск.</p>{{end}}
+{{else}}
+<div class="empty"><p>{{if .Query}}Никого не нашлось.{{else}}Пользователей пока нет.{{end}}</p></div>
+{{end}}
+{{end}}
+{{end}}

@@ -264,6 +264,24 @@ textarea { resize: vertical; }
 .note { margin: 0 0 8px; padding: 14px 18px; border-radius: var(--r-card); background: var(--surface); color: var(--muted); font-size: 15px; }
 .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 48px 0 18px; }
 .page-head h2 { margin: 0; }
+
+/* Админка */
+.page-head h1 { margin: 0; }
+.admin-tabs { display: flex; gap: 6px; }
+.admin-tabs a { padding: 7px 16px; border-radius: 999px; font-weight: 600; text-decoration: none; color: var(--text); background: var(--surface); }
+.admin-tabs a[aria-current="page"] { background: var(--green); color: #ffffff; }
+.admin-search { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 16px; }
+.admin-search input { flex: 1 1 260px; width: auto; border-radius: 999px; }
+.admin-reset { display: grid; gap: 10px; margin: 0 0 18px; border: 2px solid var(--gold); }
+.admin-reset p { margin: 0; }
+.admin-reset input { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 14px; }
+.admin-table-wrap { overflow-x: auto; border-radius: var(--r-card); background: var(--surface); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.admin-table th, .admin-table td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.admin-table th { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table td:nth-child(n+3):not(.admin-actions) { white-space: nowrap; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .empty {
   display: grid; justify-items: center; gap: 14px; text-align: center; color: var(--muted);
   padding: 32px 22px; border-radius: var(--r-card); background: var(--surface);

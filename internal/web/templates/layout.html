@@ -22,6 +22,7 @@
       <a href="/">Карта</a>
       <a class="nav-secondary" href="/meetups">Встречи</a>
       {{if .User}}
+        {{if .User.IsAdmin}}<a class="nav-secondary" href="/admin">Админка</a>{{end}}
         <a class="nav-user" href="/me"><span class="avatar small" aria-hidden="true">{{initial .User.Name}}</span><span class="nav-name">{{.User.Name}}</span></a>
         <form method="post" action="/logout" class="inline">
           <input type="hidden" name="csrf_token" value="{{.CSRF}}">

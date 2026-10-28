@@ -148,6 +148,11 @@ func (s *Service) ByOrganizer(ctx context.Context, userID int64) ([]*Meetup, err
 		` WHERE m.organizer_id = $1 ORDER BY m.starts_at DESC, m.id DESC`, userID)
 }
 
+// Recent — последние созданные встречи любой видимости и статуса (для админки).
+func (s *Service) Recent(ctx context.Context, limit int) ([]*Meetup, error) {
+	return s.collect(ctx, `SELECT `+meetupColumns+meetupFrom+` ORDER BY m.created_at DESC, m.id DESC LIMIT $1`, limit)
+}
+
 // PublicByOrganizer — предстоящие открытые встречи организатора (для его
 // публичной страницы). Встречи «для друзей» сюда не попадают никогда.
 func (s *Service) PublicByOrganizer(ctx context.Context, userID int64) ([]*Meetup, error) {

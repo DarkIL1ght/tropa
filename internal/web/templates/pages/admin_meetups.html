@@ -1,0 +1,18 @@
+{{define "title"}}Админка — встречи{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Админка</h1>
+  <nav class="admin-tabs" aria-label="Разделы админки">
+    <a href="/admin">Пользователи</a>
+    <a href="/admin/meetups" aria-current="page">Встречи</a>
+  </nav>
+</div>
+<p class="muted">Последние {{.Limit}} созданных встреч — все, включая «для друзей», отменённые и прошедшие. Откройте встречу, чтобы отредактировать или отменить её: админ может управлять любой встречей.</p>
+{{with .Meetups}}
+<div class="tickets">{{range .}}{{template "meetup_card" .}}{{end}}</div>
+{{else}}
+<div class="empty"><p>Встреч пока нет.</p></div>
+{{end}}
+{{end}}
+{{end}}
