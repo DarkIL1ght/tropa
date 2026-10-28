@@ -25,6 +25,8 @@ var assets embed.FS
 type Config struct {
 	// Secure — cookie только по HTTPS (включать за прокси с TLS).
 	Secure bool
+	// TrustProxy — адрес посетителя брать из X-Forwarded-For (сервер за своим прокси).
+	TrustProxy bool
 }
 
 // Services — бизнес-сервисы, которыми пользуются обработчики.
@@ -46,13 +48,14 @@ type Server struct {
 	places  *places.Service
 	weather *weather.Client
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
-	now   func() time.Time
-	log   *slog.Logger
-	pages map[string]*template.Template
+	now    func() time.Time
+	limits *limits
+	log    *slog.Logger
+	pages  map[string]*template.Template
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), log: log}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}

@@ -44,6 +44,12 @@ func (s *Server) rename(w http.ResponseWriter, r *http.Request) {
 func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 	u := auth.CurrentUser(r.Context())
 	v := newSettingsView(u.Name)
+	// украденная сессия не должна позволять перебирать текущий пароль
+	if ok, retry := s.limits.password.allow(strconv.FormatInt(u.ID, 10)); !ok {
+		v.Errors["current"] = tooMany(w, retry)
+		s.render(w, r, http.StatusTooManyRequests, "settings.html", v)
+		return
+	}
 	password := r.PostFormValue("password")
 	if e := auth.ValidatePassword(password); e != "" {
 		v.Errors["password"] = e

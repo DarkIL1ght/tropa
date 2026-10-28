@@ -14,6 +14,8 @@
 //	DATABASE_URL    postgres://user:pass@host:5432/db (обязательно)
 //	ADDR            адрес сервера, по умолчанию 127.0.0.1:8080
 //	SECURE_COOKIES  1 — cookie только по HTTPS (за прокси с TLS)
+//	TRUST_PROXY     1 — адрес посетителя из X-Forwarded-For (только за своим прокси:
+//	                иначе клиент подставит любой адрес и обойдёт ограничения попыток)
 //	WEATHER_URL     API погоды, по умолчанию Open-Meteo; off — без плашки погоды
 //	SITE_URL        адрес сайта для ссылок в уведомлениях, по умолчанию http://ADDR
 //	TELEGRAM_BOT_TOKEN
@@ -235,7 +237,7 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		meetupSvc := meetups.New(pool)
 		meetupSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
-		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1"},
+		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1"},
 			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool),
 				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {

@@ -4,6 +4,7 @@
   <h1>Регистрация</h1>
   <input type="hidden" name="csrf_token" value="{{.CSRF}}">
   {{with .Data}}
+  {{with index .Errors "form"}}<p class="err">{{.}}</p>{{end}}
   <label>Email
     <input type="email" name="email" value="{{.Email}}" required autocomplete="email">
     {{with index .Errors "email"}}<span class="err">{{.}}</span>{{end}}

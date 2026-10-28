@@ -29,6 +29,7 @@ services:
     environment:
       DATABASE_URL: postgres://tropa:${POSTGRES_PASSWORD}@db:5432/tropa?sslmode=disable
       SECURE_COOKIES: "1"
+      TRUST_PROXY: "1" # адрес посетителя — из X-Forwarded-For от Caddy
       SITE_URL: https://${DOMAIN:?задайте DOMAIN в .env.prod}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     restart: unless-stopped

@@ -56,6 +56,11 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		Email: strings.TrimSpace(r.PostFormValue("email")),
 		Name:  strings.TrimSpace(r.PostFormValue("name")),
 	}
+	if ok, retry := s.limits.register.allow(s.clientIP(r)); !ok {
+		f.Errors = map[string]string{"form": tooMany(w, retry)}
+		s.render(w, r, http.StatusTooManyRequests, "register.html", f)
+		return
+	}
 	password := r.PostFormValue("password")
 	f.Errors = auth.ValidateRegistration(f.Email, f.Name, password)
 	if password != r.PostFormValue("password2") && f.Errors["password"] == "" {
@@ -96,6 +101,14 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	f := accountForm{
 		Email: strings.TrimSpace(r.PostFormValue("email")),
 		Next:  auth.SafeNext(r.PostFormValue("next")),
+	}
+	// подбор пароля: и с одного адреса, и к одному аккаунту с разных
+	okIP, retryIP := s.limits.loginIP.allow(s.clientIP(r))
+	okEmail, retryEmail := s.limits.loginEmail.allow(strings.ToLower(f.Email))
+	if !okIP || !okEmail {
+		f.Errors = map[string]string{"form": tooMany(w, max(retryIP, retryEmail))}
+		s.render(w, r, http.StatusTooManyRequests, "login.html", f)
+		return
 	}
 	u, err := s.auth.Authenticate(r.Context(), f.Email, r.PostFormValue("password"))
 	if errors.Is(err, auth.ErrBadLogin) {
