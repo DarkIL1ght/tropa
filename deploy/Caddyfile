@@ -5,3 +5,11 @@
 	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy app:8080
 }
+
+# Портфолио Дархана (отдельный compose-проект ~/portfolio): контейнер в общей сети
+# tropa_default под именем portfolio. Свой домен — PORTFOLIO_DOMAIN в окружении caddy.
+{$PORTFOLIO_DOMAIN:me.130-61-149-209.sslip.io} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy portfolio:8090
+}
