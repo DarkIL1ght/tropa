@@ -23,7 +23,7 @@
   --on-ink-muted: #a3b8ab;
   /* бархат занавеса */
   --velvet: #14532d;
-  --green: #1f8a5b;
+  --green: #1b8254;
   --green-hover: #187049;
   --mint: #8fe0b4;
   /* золото */
@@ -43,7 +43,7 @@
   --accent-hover: #0f5c3a;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
-  --focus: #1f8a5b;
+  --focus: #1b8254;
   --cat-nature: #1f9d63;
   --cat-active: #2a86c0;
   --cat-indoor: #dd8a17;
@@ -107,7 +107,7 @@
   --velvet: #3b1f52; --green: #1c1c1f; --green-hover: #000000; --mint: #ffb066;
   --gold: #f07a1a; --gold-hover: #ff8f33; --gold-light: #ffd9b3; --on-gold: #0b0b0c; --gold-soft: #fde3cc;
   --bg: #f3f3f1; --surface-2: #f6f6f5; --text: #0b0b0c; --muted: #5d5d63; --line: #deded9;
-  --accent: #c2500a; --accent-hover: #9a3f08; --focus: #f07a1a;
+  --accent: #b34a0a; --accent-hover: #9a3f08; --focus: #f07a1a;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-style="halloween"]:not([data-scheme="light"]) {
@@ -577,7 +577,7 @@ html, body { overflow-x: hidden; }
 .look-preview { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; height: 56px; }
 .look-preview i { border-radius: 10px; }
 .look-base .look-preview i:nth-child(1) { background: #0d1411; }
-.look-base .look-preview i:nth-child(2) { background: #1f8a5b; }
+.look-base .look-preview i:nth-child(2) { background: #1b8254; }
 .look-base .look-preview i:nth-child(3) { background: #d9a521; }
 .look-halloween .look-preview i:nth-child(1) { background: #0b0b0c; }
 .look-halloween .look-preview i:nth-child(2) { background: #3b1f52; }
