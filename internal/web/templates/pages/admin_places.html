@@ -1,0 +1,74 @@
+{{define "title"}}Админка — места{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Админка</h1>
+  <nav class="admin-tabs" aria-label="Разделы админки">
+    <a href="/admin">Пользователи</a>
+    <a href="/admin/meetups">Встречи</a>
+    <a href="/admin/places" aria-current="page">Места{{with .Pending}} · {{len .}}{{end}}</a>
+  </nav>
+</div>
+<p class="muted">Места, которые предложили пользователи. Опубликуйте как есть, поправьте перед публикацией или отклоните — автор получит уведомление и увидит причину. Проверьте точку: ссылка «на карте» открывает OpenStreetMap.</p>
+
+{{with .Pending}}
+<div class="review-list">
+  {{range .}}
+  <article class="card review cat-{{.Category}}">
+    <header class="review-head">
+      <h2>{{.Name}}</h2>
+      <span class="badge">{{.Kind.Label}} · {{.Category.Label}}</span>
+    </header>
+    <ul class="tags">
+      <li>{{if eq .Area "region"}}За городом{{else}}Алматы{{end}}</li>
+      <li>{{if .Indoor}}В помещении{{else}}На улице{{end}}</li>
+      {{if .Free}}<li>Бесплатно</li>{{end}}
+      <li>{{.Season.Label}}</li>
+    </ul>
+    {{with .Address}}<p><strong>Адрес:</strong> {{.}}</p>{{end}}
+    {{with .Description}}<div class="description">{{.}}</div>{{end}}
+    <p class="small">
+      <a href="https://www.openstreetmap.org/?mlat={{.Lat}}&amp;mlon={{.Lon}}#map=17/{{.Lat}}/{{.Lon}}" target="_blank" rel="noopener noreferrer">На карте</a>
+      {{with .Website}} · <a href="{{.}}" target="_blank" rel="noopener noreferrer nofollow">Сайт</a>{{end}}
+    </p>
+    <p class="muted small">{{$author := .AuthorID}}{{with .AuthorName}}<a href="/u/{{$author}}">{{.}}</a>{{else}}Автор удалил аккаунт{{end}}, {{date .CreatedAt}}</p>
+    <div class="review-actions">
+      <form method="post" action="/admin/places/{{.ID}}/publish" class="inline">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+        <button class="btn small accent">Опубликовать</button>
+      </form>
+      <a class="btn small ghost" href="/admin/places/{{.ID}}/edit">Поправить</a>
+      <form method="post" action="/admin/places/{{.ID}}/reject" class="review-reject">
+        <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+        <input name="reason" required minlength="3" maxlength="500" placeholder="Причина отказа: дубль, закрылось…" aria-label="Причина отказа «{{.Name}}»">
+        <button class="btn small ghost">Отклонить</button>
+      </form>
+    </div>
+  </article>
+  {{end}}
+</div>
+{{if ge (len .) $.Data.Limit}}<p class="muted small">Показаны первые {{$.Data.Limit}}.</p>{{end}}
+{{else}}
+<div class="empty"><p>Очередь пуста — новых предложений нет.</p></div>
+{{end}}
+
+{{with .Reviewed}}
+<div class="page-head"><h2>Недавно проверенные</h2></div>
+<div class="admin-table-wrap">
+<table class="admin-table">
+  <thead><tr><th>Место</th><th>Решение</th><th>Автор</th><th>Когда</th></tr></thead>
+  <tbody>
+  {{range .}}
+    <tr>
+      <td>{{if eq .Status "published"}}<a href="/places/{{.Slug}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}<br><span class="muted small">{{.Kind.Label}}</span></td>
+      <td>{{.StatusLabel}}{{if eq .Status "rejected"}}<br><span class="muted small">{{.RejectReason}}</span>{{end}}</td>
+      <td>{{with .AuthorName}}{{.}}{{else}}<span class="muted">—</span>{{end}}</td>
+      <td>{{with .ReviewedAt}}{{date .}}{{end}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+</div>
+{{end}}
+{{end}}
+{{end}}

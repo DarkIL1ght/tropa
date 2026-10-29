@@ -70,6 +70,7 @@ type limits struct {
 	forgotIP, forgotEmail *limiter
 	chat                  *limiter
 	friend                *limiter
+	suggest               *limiter
 }
 
 func newLimits() *limits {
@@ -85,6 +86,8 @@ func newLimits() *limits {
 		chat: newLimiter(5, time.Second),
 		// заявки в друзья шлют уведомления — не даём рассылать их пачками
 		friend: newLimiter(10, 2*time.Minute),
+		// предложения мест уведомляют админов: 3 подряд, затем одно в 10 минут
+		suggest: newLimiter(3, 10*time.Minute),
 	}
 }
 

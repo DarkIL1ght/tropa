@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,9 +16,14 @@ var (
 	ErrInvalid  = errors.New("неверные данные места")
 )
 
-type Service struct{ DB *pgxpool.Pool }
+type Service struct {
+	DB  *pgxpool.Pool
+	Now func() time.Time
+	// SiteURL — адрес сайта без / в конце, для ссылок в уведомлениях.
+	SiteURL string
+}
 
-func New(db *pgxpool.Pool) *Service { return &Service{DB: db} }
+func New(db *pgxpool.Pool) *Service { return &Service{DB: db, Now: time.Now} }
 
 // UpsertResult — что сделал Upsert со строкой.
 type UpsertResult int
@@ -61,7 +67,8 @@ func upsert(ctx context.Context, db querier, p *Place) (UpsertResult, error) {
 		    website = EXCLUDED.website, opening_hours = EXCLUDED.opening_hours,
 		    source = EXCLUDED.source, osm_ref = EXCLUDED.osm_ref, status = EXCLUDED.status,
 		    updated_at = now()
-		WHERE (places.name, places.category, places.kind, places.lat, places.lon, places.area,
+		-- места от пользователей seed не перезаписывает, даже при совпадении slug
+		WHERE places.author_id IS NULL AND (places.name, places.category, places.kind, places.lat, places.lon, places.area,
 		       places.address, places.description, places.indoor, places.free, places.season,
 		       places.website, places.opening_hours, places.source, places.osm_ref, places.status)
 		      IS DISTINCT FROM
@@ -73,7 +80,7 @@ func upsert(ctx context.Context, db querier, p *Place) (UpsertResult, error) {
 		p.Indoor, p.Free, p.Season, p.Website, p.OpeningHours, p.Source, osmRef, p.Status,
 	).Scan(&p.ID, &inserted)
 	switch {
-	case errors.Is(err, pgx.ErrNoRows): // конфликт, но WHERE отсёк — данные те же
+	case errors.Is(err, pgx.ErrNoRows): // конфликт, но WHERE отсёк — данные те же или место от пользователя
 		return Unchanged, nil
 	case err != nil:
 		return Unchanged, fmt.Errorf("место %s: %w", p.Slug, err)

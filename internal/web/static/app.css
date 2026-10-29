@@ -276,6 +276,33 @@ textarea { resize: vertical; }
 .friend-actions { display: flex; gap: 6px; margin-left: auto; }
 .friend-tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--text); }
 
+/* Предложить место и модерация */
+.pick { display: grid; gap: 8px; }
+.pick label { margin: 0; }
+.pick p { margin: 0; }
+.pick .pick-map { height: 320px; margin: 0; cursor: crosshair; }
+.pin.pick { width: 20px; height: 20px; background: var(--gold); }
+.mine { max-width: 680px; margin: 0 auto; }
+.suggest-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
+.suggest-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: var(--r-card); background: var(--surface); }
+.suggest-main { display: grid; gap: 2px; min-width: 0; }
+.suggest-main a { color: var(--text); }
+.badge.status-draft { background: var(--gold-soft); }
+.badge.status-rejected { background: var(--danger-soft); color: var(--danger); }
+.badge.status-published::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); }
+.review-list { display: grid; gap: 16px; }
+.review { border-left: 6px solid var(--c, var(--green)); }
+.review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 14px; }
+.review-head h2 { margin: 0; font-size: 22px; }
+.review .tags { margin-bottom: 14px; }
+.review .tags li { background: var(--surface-2); }
+.review .description { font-size: 16px; margin-bottom: 14px; }
+.review p { margin: 0 0 10px; }
+.review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.review-reject { display: flex; flex: 1 1 320px; gap: 8px; margin: 0; }
+.review-reject input { flex: 1; padding: 7px 14px; border-radius: 999px; font-size: 15px; }
+.panel-suggest { margin: 0; padding: 10px 18px 14px; font-size: 14px; border-top: 1px solid var(--line); }
+
 /* Админка */
 .page-head h1 { margin: 0; }
 .admin-tabs { display: flex; gap: 6px; }

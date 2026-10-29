@@ -1,0 +1,114 @@
+{{define "title"}}{{if .Data.Draft}}Проверка места{{else}}Предложить место{{end}}{{end}}
+{{define "head"}}
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+{{end}}
+{{define "content"}}
+{{with .Data}}
+<form method="post" action="{{with .Draft}}/admin/places/{{.ID}}/publish{{else}}/places/suggest{{end}}" class="card form wide">
+  {{if .Draft}}
+  <h1>Проверка места</h1>
+  <p class="muted">{{with .Draft.AuthorName}}Автор — <a href="/u/{{$.Data.Draft.AuthorID}}">{{.}}</a>{{else}}Автор удалил аккаунт{{end}}, прислано {{date .Draft.CreatedAt}}. Поправьте, что нужно, и опубликуйте — автору придёт уведомление.</p>
+  <input type="hidden" name="edit" value="1">
+  {{else}}
+  <h1>Предложить место</h1>
+  <p class="muted">Знаете, куда сходить с друзьями, а на карте этого нет? Расскажите — мы проверим и добавим. Обычно это занимает день-два.</p>
+  {{end}}
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  {{with .Error}}<p class="note err">{{.}}</p>{{end}}
+
+  <label>Название
+    <input name="name" value="{{.Input.Name}}" required minlength="2" maxlength="120" placeholder="Антикафе «Время»">
+    {{with index .Errors "name"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <label>Что это
+    <select name="kind" required>
+      <option value="">Выберите…</option>
+      {{range .Groups}}{{$cat := .Category}}
+      <optgroup label="{{.Category.Label}}">
+        {{range .Kinds}}{{$v := print $cat ":" .}}
+        <option value="{{$v}}"{{if eq $v $.Data.Input.Kind}} selected{{end}}>{{.Label}}</option>
+        {{end}}
+      </optgroup>
+      {{end}}
+    </select>
+    {{with index .Errors "category"}}<span class="err">{{.}}</span>{{end}}
+    {{with index .Errors "kind"}}<span class="err">Выберите, что это за место</span>{{end}}
+  </label>
+
+  <div class="pick">
+    <label for="coords">Где на карте</label>
+    <p class="muted small" id="coords-help">Нажмите на карту, чтобы поставить точку, или вставьте координаты из 2ГИС или Google Карт: «43.2389, 76.9455».</p>
+    <div id="pick-map" class="place-map pick-map" aria-describedby="coords-help"></div>
+    <input id="coords" name="coords" value="{{.Input.Coords}}" required inputmode="decimal" placeholder="43.2389, 76.9455" autocomplete="off">
+    {{with index .Errors "coords"}}<span class="err">{{.}}</span>{{end}}
+  </div>
+
+  <label>Адрес
+    <input name="address" value="{{.Input.Address}}" maxlength="200" placeholder="ул. Абая, 10 — или как найти">
+    {{with index .Errors "address"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <label>Описание
+    <textarea name="description" rows="5" maxlength="3000" placeholder="Чем здесь заняться компанией, сколько стоит, что взять с собой">{{.Input.Description}}</textarea>
+    {{with index .Errors "description"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <label>Сайт или Instagram
+    <input type="url" name="website" value="{{.Input.Website}}" maxlength="300" placeholder="https://instagram.com/…">
+    {{with index .Errors "website"}}<span class="err">{{.}}</span>{{end}}
+  </label>
+
+  <div class="row">
+    <fieldset class="choice">
+      <legend>Сезон</legend>
+      {{range .Seasons}}
+      <label class="toggle"><input type="radio" name="season" value="{{.}}"{{if eq (print .) $.Data.Input.Season}} checked{{end}}> {{.Label}}</label>
+      {{end}}
+    </fieldset>
+    <fieldset class="choice">
+      <legend>Ещё</legend>
+      <label class="toggle"><input type="checkbox" name="indoor" value="1"{{if .Input.Indoor}} checked{{end}}> В помещении</label>
+      <label class="toggle"><input type="checkbox" name="free" value="1"{{if .Input.Free}} checked{{end}}> Бесплатно</label>
+    </fieldset>
+  </div>
+
+  <div class="actions">
+    {{if .Draft}}
+    <button class="btn accent">Опубликовать</button>
+    <a href="/admin/places">К очереди</a>
+    {{else}}
+    <button class="btn accent">Отправить на проверку</button>
+    <a href="/">Отмена</a>
+    {{end}}
+  </div>
+</form>
+
+{{if not .Draft}}
+<section class="mine">
+  <div class="page-head"><h2>Ваши предложения</h2></div>
+  {{with .Mine}}
+  <ul class="suggest-list">
+    {{range .}}
+    <li class="suggest-item">
+      <div class="suggest-main">
+        <strong>{{if eq .Status "published"}}<a href="/places/{{.Slug}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</strong>
+        <span class="muted small">{{.Kind.Label}} · {{date .CreatedAt}}</span>
+        {{if eq .Status "rejected"}}{{with .RejectReason}}<span class="small">Причина: {{.}}</span>{{end}}{{end}}
+      </div>
+      <span class="badge status-{{.Status}}">{{.StatusLabel}}</span>
+    </li>
+    {{end}}
+  </ul>
+  <p class="muted small">На проверке одновременно может быть до {{$.Data.Max}} мест.</p>
+  {{else}}
+  <div class="empty"><p>Вы пока ничего не предлагали. Первое место — с формы выше.</p></div>
+  {{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}
+{{define "scripts"}}
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/suggest.js"></script>
+{{end}}

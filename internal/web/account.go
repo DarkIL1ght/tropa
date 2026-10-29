@@ -41,6 +41,12 @@ var flashText = map[string]string{
 	"friend_added":     "Теперь вы друзья!",
 	"friend_removed":   "Готово.",
 	"friend_stale":     "Заявка уже не актуальна — вот как сейчас.",
+
+	"place_suggested": "Спасибо! Место отправлено на проверку — как только его посмотрят, оно появится на карте.",
+	"place_published": "Место опубликовано.",
+	"place_rejected":  "Место отклонено, автор увидит причину.",
+	"place_reviewed":  "Это место уже проверили — вот актуальная очередь.",
+	"reason_required": "Напишите причину отказа — от 3 до 500 символов.",
 }
 
 type accountForm struct {

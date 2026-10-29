@@ -270,9 +270,11 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		meetupSvc.SiteURL = siteURL
 		friendSvc := friends.New(pool)
 		friendSvc.SiteURL = siteURL
+		placeSvc := places.New(pool)
+		placeSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL},
-			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: places.New(pool), Friends: friendSvc,
+			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: placeSvc, Friends: friendSvc,
 				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err

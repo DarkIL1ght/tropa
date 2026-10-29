@@ -10,6 +10,7 @@
     </div>
     <div class="actions profile-actions">
       <a class="btn light ghost" href="/friends">Друзья{{with .Data}}{{with .Incoming}} · заявок: {{.}}{{end}}{{end}}</a>
+      <a class="btn light ghost" href="/places/suggest">Предложить место</a>
       <a class="btn light ghost" href="/me/settings">Настройки</a>
       <a class="btn light ghost" href="/u/{{.User.ID}}">Публичная страница</a>
       {{if .User.IsAdmin}}<a class="btn light ghost" href="/admin">Админка</a>{{end}}

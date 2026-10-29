@@ -108,6 +108,8 @@ const (
 	Draft     Status = "draft"
 	Published Status = "published"
 	Hidden    Status = "hidden"
+	// Rejected — предложение пользователя, отклонённое модератором.
+	Rejected Status = "rejected"
 )
 
 // Place — место. Теги json — формат seed-файлов data/places/*.json.
@@ -199,8 +201,8 @@ func (p *Place) Validate() map[string]string {
 	if p.Source == "osm" && p.OSMRef == "" {
 		errs["osm_ref"] = "у места из OSM нужен osm_ref"
 	}
-	if p.Status != Draft && p.Status != Published && p.Status != Hidden {
-		errs["status"] = "status — draft, published или hidden"
+	if p.Status != Draft && p.Status != Published && p.Status != Hidden && p.Status != Rejected {
+		errs["status"] = "status — draft, published, hidden или rejected"
 	}
 	return errs
 }
