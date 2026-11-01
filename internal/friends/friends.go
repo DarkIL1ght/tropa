@@ -36,6 +36,9 @@ type Service struct {
 	Now func() time.Time
 	// SiteURL — адрес сайта без / в конце, для ссылок в уведомлениях.
 	SiteURL string
+	// OnlyVerified — поиск показывает только подтвердивших почту
+	// (когда подтверждение обязательно).
+	OnlyVerified bool
 }
 
 func New(db *pgxpool.Pool) *Service { return &Service{DB: db, Now: time.Now} }

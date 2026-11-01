@@ -100,7 +100,9 @@ func newTestServer(t *testing.T) *httptest.Server {
 // setup меняет сервер до запуска: подставить погоду, часы.
 func newTestEnv(t *testing.T, setup ...func(*Server)) (*httptest.Server, *pgxpool.Pool) {
 	db := storetest.New(t)
-	srv, err := New(Config{}, Services{Auth: auth.New(db), Meetups: meetups.New(db), Places: places.New(db), Friends: friends.New(db),
+	f := friends.New(db)
+	f.OnlyVerified = true
+	srv, err := New(Config{RequireVerification: true}, Services{Auth: auth.New(db), Meetups: meetups.New(db), Places: places.New(db), Friends: f,
 		DM: dm.New(db), Mail: testMail},
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {

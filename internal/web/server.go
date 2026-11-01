@@ -32,6 +32,9 @@ type Config struct {
 	TrustProxy bool
 	// SiteURL — адрес сайта без / в конце, для ссылок в сообщениях бота.
 	SiteURL string
+	// RequireVerification — без подтверждённой почты аккаунт только смотрит.
+	// Выключено — подтверждение необязательно (письма ещё не доходят до всех).
+	RequireVerification bool
 }
 
 // Services — бизнес-сервисы, которыми пользуются обработчики.
@@ -195,6 +198,8 @@ type view struct {
 	Flash string
 	// Unread — непрочитанные личные сообщения (счётчик в шапке).
 	Unread int
+	// AskVerify — показать плашку «подтвердите почту».
+	AskVerify bool
 	Data   any
 }
 
@@ -211,6 +216,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 		CSRF: auth.CSRFToken(r.Context()),
 		Data: data,
 	}
+	v.AskVerify = v.User != nil && !v.User.Verified && s.cfg.RequireVerification
 	if v.User != nil && s.dm != nil {
 		// без счётчика страница всё равно нужна: ошибку только пишем в лог
 		n, err := s.dm.Unread(r.Context(), v.User.ID)

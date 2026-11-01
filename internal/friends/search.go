@@ -21,8 +21,8 @@ type Found struct {
 
 // Search ищет людей, которых можно добавить в друзья: по части имени или по
 // email целиком. Email в результатах не показывается и по части не ищется —
-// так адреса нельзя перебрать. Себя и аккаунты без подтверждённой почты не
-// показывает. Запрос короче 2 символов — пустой результат.
+// так адреса нельзя перебрать. Себя не показывает, при OnlyVerified — и аккаунты
+// без подтверждённой почты. Запрос короче 2 символов — пустой результат.
 func (s *Service) Search(ctx context.Context, me int64, q string) ([]Found, error) {
 	q = strings.TrimSpace(q)
 	if utf8.RuneCountInString(q) < 2 {
@@ -40,11 +40,11 @@ func (s *Service) Search(ctx context.Context, me int64, q string) ([]Found, erro
 		            ELSE '' END
 		  FROM users u
 		  LEFT JOIN friendships f ON (f.user_id = $1 AND f.friend_id = u.id) OR (f.user_id = u.id AND f.friend_id = $1)
-		 WHERE u.id <> $1 AND u.email_verified_at IS NOT NULL
+		 WHERE u.id <> $1 AND (NOT $5 OR u.email_verified_at IS NOT NULL)
 		   AND (CASE WHEN $3 <> '' THEN lower(u.email) = lower($3)
 		             ELSE u.name ILIKE '%' || $2 || '%' END)
 		 ORDER BY f.status = 'accepted' DESC NULLS LAST, lower(u.name), u.id
-		 LIMIT $4`, me, likeEscape(q), email, SearchLimit)
+		 LIMIT $4`, me, likeEscape(q), email, SearchLimit, s.OnlyVerified)
 	if err != nil {
 		return nil, err
 	}

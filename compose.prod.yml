@@ -32,6 +32,9 @@ services:
       TRUST_PROXY: "1" # адрес посетителя — из X-Forwarded-For от Caddy
       SITE_URL: https://${DOMAIN:?задайте DOMAIN в .env.prod}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      EMAIL_VERIFICATION: ${EMAIL_VERIFICATION:-0}
     restart: unless-stopped
     logging: *logging
 

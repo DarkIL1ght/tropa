@@ -102,6 +102,11 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
+	if !s.cfg.RequireVerification {
+		flash(w, "welcome")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 	// не ушло письмо — на странице кода можно запросить его ещё раз
 	if err := s.sendCode(r, u); err != nil {
 		s.log.Error("письмо с кодом", "user", u.ID, "err", err)

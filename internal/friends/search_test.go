@@ -8,6 +8,7 @@ import (
 func TestSearch(t *testing.T) {
 	ctx := context.Background()
 	s, user := setup(t)
+	s.OnlyVerified = true
 	me := user("Дархан")           // u1
 	arman := user("Arman Petrov")  // u2
 	armanS := user("Арман Сейтов") // u3

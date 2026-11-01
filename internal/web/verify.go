@@ -95,7 +95,7 @@ func (s *Server) resendCode(w http.ResponseWriter, r *http.Request) {
 // страница ввода кода (гостю — вход). Запросы chat.js получают JSON-ошибку.
 func (s *Server) verified(h http.HandlerFunc) http.Handler {
 	return auth.RequireUser(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if auth.CurrentUser(r.Context()).Verified {
+		if auth.CurrentUser(r.Context()).Verified || !s.cfg.RequireVerification {
 			h(w, r)
 			return
 		}

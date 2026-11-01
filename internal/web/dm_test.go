@@ -120,6 +120,37 @@ func TestUnverifiedOnlyLooks(t *testing.T) {
 	}
 }
 
+// Пока письма доходят не до всех, подтверждение выключено: новичок сразу
+// пользуется сайтом, плашки нет, в поиске он виден.
+func TestVerificationOff(t *testing.T) {
+	ts, db := newTestEnv(t, func(s *Server) {
+		s.cfg.RequireVerification = false
+		s.friends.OnlyVerified = false
+	})
+	seedPlaces(t, places.New(db), &places.Place{
+		Slug: "test-park", Name: "Тестовый парк", Category: places.Nature, Kind: "park",
+		Lat: 43.22, Lon: 76.93, Area: places.Almaty,
+	})
+	c := newClient(t, ts.URL)
+	resp := c.post("/register", "/register", url.Values{
+		"email": {"free@tropa.kz"}, "name": {"Свободный"}, "password": {"password123"}, "password2": {"password123"},
+	})
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/" {
+		t.Fatalf("регистрация: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	if _, body := c.get("/meetups"); strings.Contains(body, "Подтвердите почту") {
+		t.Fatal("плашка при выключенном подтверждении")
+	}
+	if resp := c.post("/places/test-park", "/places/test-park/meetups", meetupForm("Сходка", "", "public")); resp.StatusCode != http.StatusSeeOther ||
+		!strings.HasPrefix(resp.Header.Get("Location"), "/m/") {
+		t.Fatalf("встреча без подтверждения почты: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	other := signupUnverified(t, ts.URL, "other@tropa.kz")
+	if _, body := other.get("/friends?q=" + url.QueryEscape("Свобод")); !strings.Contains(body, "Свободный") {
+		t.Fatal("неподтверждённый не находится в поиске")
+	}
+}
+
 func TestResendCode(t *testing.T) {
 	ts := newTestServer(t)
 	c := signupUnverified(t, ts.URL, "resend@tropa.kz")

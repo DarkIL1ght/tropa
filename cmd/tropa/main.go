@@ -22,6 +22,12 @@
 //	TELEGRAM_BOT_TOKEN
 //	                токен бота уведомлений (docs/telegram.md); пусто — без уведомлений
 //	TELEGRAM_API_URL  адрес Bot API, по умолчанию https://api.telegram.org
+//	RESEND_API_KEY  ключ resend.com для писем (коды подтверждения); пусто — письма только в лог
+//	MAIL_FROM       отправитель, по умолчанию «Tropa <onboarding@resend.dev>» (без своего домена
+//	                Resend доставляет только на адрес владельца аккаунта)
+//	EMAIL_VERIFICATION
+//	                1 — без подтверждённой почты аккаунт только смотрит; включать, когда письма
+//	                доходят до всех (свой домен в Resend)
 package main
 
 import (
@@ -45,6 +51,7 @@ import (
 	"tropa/internal/auth"
 	"tropa/internal/dm"
 	"tropa/internal/friends"
+	"tropa/internal/mail"
 	"tropa/internal/meetups"
 	"tropa/internal/notify"
 	"tropa/internal/osm"
@@ -276,14 +283,28 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		placeSvc := places.New(pool)
 		placeSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
-		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL},
+		requireEmail := os.Getenv("EMAIL_VERIFICATION") == "1"
+		friendSvc.OnlyVerified = requireEmail
+		var sender mail.Sender
+		if key := os.Getenv("RESEND_API_KEY"); key != "" {
+			from := os.Getenv("MAIL_FROM")
+			if from == "" {
+				from = "Tropa <onboarding@resend.dev>"
+			}
+			sender = mail.NewResend(key, from)
+			log.Info("письма через Resend", "from", from, "подтверждение почты обязательно", requireEmail)
+		} else {
+			log.Info("письма только в лог: нет RESEND_API_KEY", "подтверждение почты обязательно", requireEmail)
+		}
+		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL,
+			RequireVerification: requireEmail},
 			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: placeSvc, Friends: friendSvc, DM: dmSvc,
-				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
+				Mail: sender, Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err
 		}
 
-		go purgeSessions(ctx, log, authSvc)
+		go purgeSessions(ctx, log, authSvc, requireEmail)
 		go meetupJobs(ctx, log, meetupSvc)
 		if notifySvc.Enabled() {
 			go notifySvc.Poll(ctx)
@@ -317,9 +338,9 @@ func serve(ctx context.Context, log *slog.Logger) error {
 	})
 }
 
-// purgeSessions раз в час удаляет просроченные сессии и аккаунты, не
-// подтвердившие почту за неделю.
-func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
+// purgeSessions раз в час удаляет просроченные сессии, а при обязательном
+// подтверждении почты — и аккаунты, не подтвердившие её за неделю.
+func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service, purgeUnverified bool) {
 	t := time.NewTicker(time.Hour)
 	defer t.Stop()
 	for {
@@ -328,10 +349,13 @@ func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 		} else if n > 0 {
 			log.Info("удалены просроченные сессии", "count", n)
 		}
-		if n, err := a.PurgeUnverified(ctx); err != nil && ctx.Err() == nil {
-			log.Warn("очистка неподтверждённых аккаунтов", "err", err)
-		} else if n > 0 {
-			log.Info("удалены аккаунты без подтверждённой почты", "count", n)
+		// без обязательного подтверждения неподтверждённые — обычные пользователи, их не трогаем
+		if purgeUnverified {
+			if n, err := a.PurgeUnverified(ctx); err != nil && ctx.Err() == nil {
+				log.Warn("очистка неподтверждённых аккаунтов", "err", err)
+			} else if n > 0 {
+				log.Info("удалены аккаунты без подтверждённой почты", "count", n)
+			}
 		}
 		select {
 		case <-ctx.Done():

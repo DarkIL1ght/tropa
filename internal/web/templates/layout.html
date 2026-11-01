@@ -38,7 +38,7 @@
   {{block "masthead" .}}{{end}}
   <main id="content">
     {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
-    {{block "verify_banner" .}}{{with .User}}{{if not .Verified}}<p class="flash warn" role="status">Подтвердите почту, чтобы создавать встречи, записываться и общаться. <a href="/verify">Ввести код</a></p>{{end}}{{end}}{{end}}
+    {{block "verify_banner" .}}{{if .AskVerify}}<p class="flash warn" role="status">Подтвердите почту, чтобы создавать встречи, записываться и общаться. <a href="/verify">Ввести код</a></p>{{end}}{{end}}
     {{block "content" .}}{{end}}
   </main>
   <footer class="foot">
