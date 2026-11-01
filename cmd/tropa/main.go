@@ -43,6 +43,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/dm"
 	"tropa/internal/friends"
 	"tropa/internal/meetups"
 	"tropa/internal/notify"
@@ -270,11 +271,13 @@ func serve(ctx context.Context, log *slog.Logger) error {
 		meetupSvc.SiteURL = siteURL
 		friendSvc := friends.New(pool)
 		friendSvc.SiteURL = siteURL
+		dmSvc := dm.New(pool)
+		dmSvc.SiteURL = siteURL
 		placeSvc := places.New(pool)
 		placeSvc.SiteURL = siteURL
 		notifySvc := telegram(ctx, log, pool, os.Getenv("TELEGRAM_BOT_TOKEN"))
 		srv, err := web.New(web.Config{Secure: os.Getenv("SECURE_COOKIES") == "1", TrustProxy: os.Getenv("TRUST_PROXY") == "1", SiteURL: siteURL},
-			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: placeSvc, Friends: friendSvc,
+			web.Services{Auth: authSvc, Meetups: meetupSvc, Notify: notifySvc, Places: placeSvc, Friends: friendSvc, DM: dmSvc,
 				Weather: almatyWeather(os.Getenv("WEATHER_URL"))}, log)
 		if err != nil {
 			return err
@@ -314,7 +317,8 @@ func serve(ctx context.Context, log *slog.Logger) error {
 	})
 }
 
-// purgeSessions раз в час удаляет просроченные сессии.
+// purgeSessions раз в час удаляет просроченные сессии и аккаунты, не
+// подтвердившие почту за неделю.
 func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 	t := time.NewTicker(time.Hour)
 	defer t.Stop()
@@ -323,6 +327,11 @@ func purgeSessions(ctx context.Context, log *slog.Logger, a *auth.Service) {
 			log.Warn("очистка сессий", "err", err)
 		} else if n > 0 {
 			log.Info("удалены просроченные сессии", "count", n)
+		}
+		if n, err := a.PurgeUnverified(ctx); err != nil && ctx.Err() == nil {
+			log.Warn("очистка неподтверждённых аккаунтов", "err", err)
+		} else if n > 0 {
+			log.Info("удалены аккаунты без подтверждённой почты", "count", n)
 		}
 		select {
 		case <-ctx.Done():

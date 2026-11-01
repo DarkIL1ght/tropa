@@ -23,6 +23,7 @@
       <a href="/meetups">Встречи</a>
       {{if .User}}
         {{if .User.IsAdmin}}<a class="nav-secondary" href="/admin">Админка</a>{{end}}
+        <a href="/messages" class="nav-messages">Сообщения{{with .Unread}} <span class="badge count" aria-label="непрочитанных: {{.}}">{{.}}</span>{{end}}</a>
         <a class="nav-user" href="/me"><span class="avatar small" aria-hidden="true">{{initial .User.Name}}</span><span class="nav-name">{{.User.Name}}</span></a>
         <form method="post" action="/logout" class="inline nav-secondary">
           <input type="hidden" name="csrf_token" value="{{.CSRF}}">
@@ -37,6 +38,7 @@
   {{block "masthead" .}}{{end}}
   <main id="content">
     {{with .Flash}}<p class="flash" role="status">{{.}}</p>{{end}}
+    {{block "verify_banner" .}}{{with .User}}{{if not .Verified}}<p class="flash warn" role="status">Подтвердите почту, чтобы создавать встречи, записываться и общаться. <a href="/verify">Ввести код</a></p>{{end}}{{end}}{{end}}
     {{block "content" .}}{{end}}
   </main>
   <footer class="foot">

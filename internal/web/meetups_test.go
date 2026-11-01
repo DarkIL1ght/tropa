@@ -49,6 +49,21 @@ func signup(t *testing.T, base, email string) *client {
 	if resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("регистрация %s: %d", email, resp.StatusCode)
 	}
+	if resp := c.post("/verify", "/verify", url.Values{"code": {testMail.code(email)}}); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("подтверждение %s: %d", email, resp.StatusCode)
+	}
+	return c
+}
+
+// signupUnverified — зарегистрированный, но не подтвердивший почту.
+func signupUnverified(t *testing.T, base, email string) *client {
+	c := newClient(t, base)
+	resp := c.post("/register", "/register", url.Values{
+		"email": {email}, "name": {"Пользователь " + email}, "password": {"password123"}, "password2": {"password123"},
+	})
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("регистрация %s: %d", email, resp.StatusCode)
+	}
 	return c
 }
 

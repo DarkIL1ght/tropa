@@ -40,6 +40,8 @@ type User struct {
 	// Оформление сайта: стиль (Styles) и тема (Schemes).
 	Style  string
 	Scheme string
+	// Verified — email подтверждён кодом из письма; без этого аккаунт только смотрит.
+	Verified bool
 }
 
 // Styles и Schemes — допустимые значения оформления и их подписи (по порядку для формы).
@@ -120,8 +122,8 @@ func (s *Service) Register(ctx context.Context, email, name, password string) (*
 	u := &User{Email: email, Name: name}
 	err = s.DB.QueryRow(ctx,
 		`INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3)
-		 RETURNING id, role, created_at, style, scheme`,
-		email, name, string(hash)).Scan(&u.ID, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
+		 RETURNING id, role, created_at, style, scheme, email_verified_at IS NOT NULL`,
+		email, name, string(hash)).Scan(&u.ID, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &u.Verified)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 		return nil, ErrEmailTaken
@@ -141,8 +143,9 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*Us
 	u := &User{}
 	var hash string
 	err := s.DB.QueryRow(ctx,
-		`SELECT id, email, name, role, created_at, style, scheme, password_hash FROM users WHERE lower(email) = lower($1)`,
-		strings.TrimSpace(email)).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &hash)
+		`SELECT id, email, name, role, created_at, style, scheme, email_verified_at IS NOT NULL, password_hash
+		   FROM users WHERE lower(email) = lower($1)`,
+		strings.TrimSpace(email)).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &u.Verified, &hash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
 		return nil, ErrBadLogin
@@ -159,8 +162,8 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*Us
 // UserByID — пользователь по id (для публичного профиля); ErrNoUser, если нет.
 func (s *Service) UserByID(ctx context.Context, id int64) (*User, error) {
 	u := &User{}
-	err := s.DB.QueryRow(ctx, `SELECT id, email, name, role, created_at, style, scheme FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
+	err := s.DB.QueryRow(ctx, `SELECT id, email, name, role, created_at, style, scheme, email_verified_at IS NOT NULL FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &u.Verified)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNoUser
 	}
@@ -249,10 +252,10 @@ func (s *Service) UserBySession(ctx context.Context, token string) (*User, error
 	}
 	u := &User{}
 	err := s.DB.QueryRow(ctx,
-		`SELECT u.id, u.email, u.name, u.role, u.created_at, u.style, u.scheme
+		`SELECT u.id, u.email, u.name, u.role, u.created_at, u.style, u.scheme, u.email_verified_at IS NOT NULL
 		   FROM sessions s JOIN users u ON u.id = s.user_id
 		  WHERE s.token_hash = $1 AND s.expires_at > $2`,
-		hashToken(token), s.Now()).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme)
+		hashToken(token), s.Now()).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt, &u.Style, &u.Scheme, &u.Verified)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNoSession
 	}

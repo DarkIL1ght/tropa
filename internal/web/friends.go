@@ -3,7 +3,9 @@ package web
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"tropa/internal/auth"
 	"tropa/internal/friends"
@@ -13,6 +15,13 @@ import (
 type friendsView struct {
 	friends.Lists
 	Meetups []*meetups.Meetup
+	// Поиск людей: запрос и найденные (Searched — запрос был).
+	Query    string
+	Searched bool
+	Found    []friends.Found
+	Next     string // вернуться к этим же результатам после кнопки
+	// ProfileURL — ссылка на свою страницу, чтобы скинуть другу.
+	ProfileURL string
 }
 
 // friendsPage — друзья, заявки и предстоящие встречи друзей (в том числе
@@ -29,7 +38,30 @@ func (s *Server) friendsPage(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
+	v.Query = strings.TrimSpace(r.URL.Query().Get("q"))
+	if v.Query != "" {
+		v.Searched = true
+		v.Next = "/friends?q=" + url.QueryEscape(v.Query)
+		if v.Found, err = s.friends.Search(r.Context(), u.ID, v.Query); err != nil {
+			s.serverError(w, r, err)
+			return
+		}
+	}
+	v.ProfileURL = s.siteURL(r) + "/u/" + strconv.FormatInt(u.ID, 10)
 	s.render(w, r, http.StatusOK, "friends.html", v)
+}
+
+// siteURL — адрес сайта для ссылок, которые копируют и отправляют: из
+// настроек, а без них (разработка) — по адресу текущего запроса.
+func (s *Server) siteURL(r *http.Request) string {
+	if s.cfg.SiteURL != "" {
+		return s.cfg.SiteURL
+	}
+	scheme := "http"
+	if s.cfg.Secure {
+		scheme = "https"
+	}
+	return scheme + "://" + r.Host
 }
 
 var friendFlash = map[friends.Status]string{

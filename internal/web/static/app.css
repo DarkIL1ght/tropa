@@ -635,3 +635,17 @@ html, body { overflow-x: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Подтверждение почты, поиск людей, личные сообщения */
+.flash.warn { background: var(--danger-soft); border-radius: 18px; }
+.flash.warn a { color: inherit; }
+.badge.count { min-width: 20px; justify-content: center; padding: 1px 7px; background: var(--gold); color: var(--on-gold); font-size: 12px; }
+.friend-search { margin-bottom: 28px; }
+.search-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.search-row input { flex: 1 1 240px; width: auto; border-radius: 999px; }
+.share-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 0; }
+.share-row .copy-src { flex: 1 1 220px; width: auto; border-radius: 999px; font-size: 14px; }
+.threads li { border-radius: 22px; }
+.thread-link { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.thread-name { display: flex; align-items: center; gap: 8px; }
+.thread-last { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

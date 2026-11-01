@@ -1,0 +1,24 @@
+{{define "title"}}Сообщения{{end}}
+{{define "content"}}
+<div class="page-head first">
+  <h1>Сообщения</h1>
+</div>
+{{with .Data}}
+<ul class="friend-list threads">
+  {{range .}}
+  <li>
+    <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
+    <a class="thread-link" href="/messages/{{.UserID}}">
+      <span class="thread-name">{{.Name}}{{with .Unread}} <span class="badge">{{.}}</span>{{end}}</span>
+      {{with .Last}}<span class="muted small thread-last">{{if eq .FromID $.User.ID}}Вы: {{end}}{{.Body}}</span>{{else}}<span class="muted small thread-last">Напишите первым</span>{{end}}
+    </a>
+    {{with .Last}}<time class="muted small" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{when .CreatedAt}}</time>{{end}}
+  </li>
+  {{end}}
+</ul>
+{{else}}
+<div class="empty">
+  <p>Писать можно друзьям. <a href="/friends">Найдите друзей</a> по имени или email и добавьте их — после этого здесь появится переписка.</p>
+</div>
+{{end}}
+{{end}}

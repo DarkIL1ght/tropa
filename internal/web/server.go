@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"tropa/internal/auth"
+	"tropa/internal/dm"
 	"tropa/internal/friends"
+	"tropa/internal/mail"
 	"tropa/internal/meetups"
 	"tropa/internal/notify"
 	"tropa/internal/places"
@@ -43,6 +45,10 @@ type Services struct {
 	Friends *friends.Service
 	// Weather — погода для плашки на карте; nil — без погоды.
 	Weather *weather.Client
+	// DM — личные сообщения между друзьями.
+	DM *dm.Service
+	// Mail — письма (коды подтверждения); nil — письма пишутся в лог.
+	Mail mail.Sender
 }
 
 type Server struct {
@@ -53,16 +59,23 @@ type Server struct {
 	friends *friends.Service
 	places  *places.Service
 	weather *weather.Client
+	dm      *dm.Service
+	mail    mail.Sender
 	// now — текущее время (подменяется в тестах): от него зависит «не сезон».
 	now    func() time.Time
 	limits *limits
-	chat   *hub
+	chat   *hub[meetups.Message]
+	dms    *hub[dm.Message]
 	log    *slog.Logger
 	pages  map[string]*template.Template
 }
 
 func New(cfg Config, svc Services, log *slog.Logger) (*Server, error) {
-	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, friends: svc.Friends, places: svc.Places, weather: svc.Weather, now: time.Now, limits: newLimits(), chat: newHub(), log: log}
+	s := &Server{cfg: cfg, auth: svc.Auth, meetups: svc.Meetups, notify: svc.Notify, friends: svc.Friends, places: svc.Places, weather: svc.Weather,
+		dm: svc.DM, mail: svc.Mail, now: time.Now, limits: newLimits(), chat: newHub[meetups.Message](), dms: newHub[dm.Message](), log: log}
+	if s.mail == nil {
+		s.mail = mail.LogSender{Log: log}
+	}
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
@@ -118,13 +131,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.mapPage)
 	mux.HandleFunc("GET /api/places", s.apiPlaces)
 	mux.HandleFunc("GET /places/{slug}", s.showPlace)
-	mux.Handle("GET /places/suggest", auth.RequireUser(http.HandlerFunc(s.suggestForm)))
-	mux.Handle("POST /places/suggest", auth.RequireUser(http.HandlerFunc(s.suggestPlace)))
+	mux.Handle("GET /places/suggest", s.verified(s.suggestForm))
+	mux.Handle("POST /places/suggest", s.verified(s.suggestPlace))
 	mux.HandleFunc("GET /register", s.registerForm)
 	mux.HandleFunc("POST /register", s.register)
 	mux.HandleFunc("GET /login", s.loginForm)
 	mux.HandleFunc("POST /login", s.login)
 	mux.HandleFunc("POST /logout", s.logout)
+	mux.Handle("GET /verify", auth.RequireUser(http.HandlerFunc(s.verifyForm)))
+	mux.Handle("POST /verify", auth.RequireUser(http.HandlerFunc(s.verify)))
+	mux.Handle("POST /verify/resend", auth.RequireUser(http.HandlerFunc(s.resendCode)))
 	mux.HandleFunc("GET /password/forgot", s.forgotForm)
 	mux.HandleFunc("POST /password/forgot", s.forgot)
 	mux.HandleFunc("GET /password/reset/{token}", s.resetForm)
@@ -138,20 +154,24 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /me/password", auth.RequireUser(http.HandlerFunc(s.changePassword)))
 	mux.Handle("POST /me/appearance", auth.RequireUser(http.HandlerFunc(s.setAppearance)))
 	mux.HandleFunc("GET /u/{id}", s.showUser)
-	mux.Handle("POST /u/{id}/friend", auth.RequireUser(http.HandlerFunc(s.friendAction)))
+	mux.Handle("POST /u/{id}/friend", s.verified(s.friendAction))
 	mux.Handle("GET /friends", auth.RequireUser(http.HandlerFunc(s.friendsPage)))
+	mux.Handle("GET /messages", auth.RequireUser(http.HandlerFunc(s.inbox)))
+	mux.Handle("GET /messages/{id}", auth.RequireUser(http.HandlerFunc(s.conversation)))
+	mux.Handle("POST /messages/{id}", s.verified(s.postDirect))
+	mux.Handle("GET /messages/{id}/stream", auth.RequireUser(http.HandlerFunc(s.directStream)))
 
 	mux.HandleFunc("GET /meetups", s.meetupList)
-	mux.Handle("GET /places/{slug}/meetups/new", auth.RequireUser(http.HandlerFunc(s.newMeetup)))
-	mux.Handle("POST /places/{slug}/meetups", auth.RequireUser(http.HandlerFunc(s.createMeetup)))
+	mux.Handle("GET /places/{slug}/meetups/new", s.verified(s.newMeetup))
+	mux.Handle("POST /places/{slug}/meetups", s.verified(s.createMeetup))
 	mux.HandleFunc("GET /m/{token}", s.showMeetup)
 	mux.Handle("GET /m/{token}/edit", auth.RequireUser(http.HandlerFunc(s.editMeetup)))
 	mux.Handle("POST /m/{token}/edit", auth.RequireUser(http.HandlerFunc(s.updateMeetup)))
 	mux.Handle("POST /m/{token}/status", auth.RequireUser(http.HandlerFunc(s.setMeetupStatus)))
-	mux.Handle("POST /m/{token}/join", auth.RequireUser(http.HandlerFunc(s.joinMeetup)))
+	mux.Handle("POST /m/{token}/join", s.verified(s.joinMeetup))
 	mux.Handle("POST /m/{token}/leave", auth.RequireUser(http.HandlerFunc(s.leaveMeetup)))
-	mux.Handle("POST /m/{token}/accept", auth.RequireUser(http.HandlerFunc(s.acceptOffer)))
-	mux.Handle("POST /m/{token}/messages", auth.RequireUser(http.HandlerFunc(s.postMessage)))
+	mux.Handle("POST /m/{token}/accept", s.verified(s.acceptOffer))
+	mux.Handle("POST /m/{token}/messages", s.verified(s.postMessage))
 	mux.Handle("GET /m/{token}/stream", auth.RequireUser(http.HandlerFunc(s.stream)))
 	mux.Handle("GET /admin", s.requireAdmin(s.adminUsers))
 	mux.Handle("POST /admin/users/{id}/reset", s.requireAdmin(s.adminReset))
@@ -173,7 +193,9 @@ type view struct {
 	User  *auth.User
 	CSRF  string
 	Flash string
-	Data  any
+	// Unread — непрочитанные личные сообщения (счётчик в шапке).
+	Unread int
+	Data   any
 }
 
 // render рисует страницу в буфер, чтобы ошибка шаблона не оставила
@@ -188,6 +210,14 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 		User: auth.CurrentUser(r.Context()),
 		CSRF: auth.CSRFToken(r.Context()),
 		Data: data,
+	}
+	if v.User != nil && s.dm != nil {
+		// без счётчика страница всё равно нужна: ошибку только пишем в лог
+		n, err := s.dm.Unread(r.Context(), v.User.ID)
+		if err != nil {
+			s.log.Warn("счётчик сообщений", "err", err)
+		}
+		v.Unread = n
 	}
 	if c, err := r.Cookie("tropa_flash"); err == nil {
 		v.Flash = flashText[c.Value]

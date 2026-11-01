@@ -105,11 +105,11 @@ func TestChatFlow(t *testing.T) {
 }
 
 func TestHubSlowSubscriber(t *testing.T) {
-	h := newHub()
-	ch, cancel := h.subscribe(1)
+	h := newHub[meetups.Message]()
+	ch, cancel := h.subscribe("1")
 	defer cancel()
 	for i := range 20 { // буфер 16: медленного подписчика отключаем, а не ждём
-		h.publish(meetups.Message{MeetupID: 1, ID: int64(i)})
+		h.publish("1", meetups.Message{MeetupID: 1, ID: int64(i)})
 	}
 	n := 0
 	for range ch {
@@ -119,7 +119,7 @@ func TestHubSlowSubscriber(t *testing.T) {
 		t.Fatalf("получено %d до отключения", n)
 	}
 	h.close()
-	if ch2, _ := h.subscribe(1); func() bool { _, ok := <-ch2; return ok }() {
+	if ch2, _ := h.subscribe("1"); func() bool { _, ok := <-ch2; return ok }() {
 		t.Fatal("после close подписка должна сразу закрываться")
 	}
 }

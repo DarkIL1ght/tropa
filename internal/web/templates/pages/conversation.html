@@ -1,0 +1,27 @@
+{{define "title"}}{{.Data.Other.Name}} — сообщения{{end}}
+{{define "content"}}
+{{with .Data}}
+<div class="page-head first">
+  <h1><a href="/u/{{.Other.ID}}">{{.Other.Name}}</a></h1>
+  <a class="btn small ghost" href="/messages">Все сообщения</a>
+</div>
+<section class="chat" id="chat" data-stream="/messages/{{.Other.ID}}/stream" data-me="{{$.User.ID}}">
+  {{/* без пробелов между тегами: пустой список должен совпадать с :empty */}}
+  <ol class="messages" aria-live="polite">{{range .Messages -}}
+    <li class="msg{{if eq .FromID $.User.ID}} mine{{end}}" data-id="{{.ID}}">
+      <span class="msg-head"><a href="/u/{{.FromID}}">{{.Name}}</a> <time datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{clock .CreatedAt}}</time></span>
+      <span class="msg-body">{{.Body}}</span>
+    </li>
+  {{- end}}</ol>
+  <p class="chat-empty muted"{{if .Messages}} hidden{{end}}>Сообщений пока нет — напишите первым.</p>
+  <form method="post" action="/messages/{{.Other.ID}}" class="chat-form">
+    <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+    <textarea name="body" rows="2" maxlength="{{.MaxChat}}" required placeholder="Ваше сообщение" aria-label="Сообщение"></textarea>
+    <button class="btn">Отправить</button>
+    <p class="chat-error err" role="alert" hidden></p>
+  </form>
+  <p class="muted small">Если у собеседника подключён Telegram, ему придёт уведомление — не чаще раза в 15 минут.</p>
+</section>
+{{end}}
+{{end}}
+{{define "scripts"}}<script src="/static/chat.js"></script>{{end}}

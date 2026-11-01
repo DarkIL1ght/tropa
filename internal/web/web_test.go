@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -9,16 +10,41 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"tropa/internal/auth"
+	"tropa/internal/dm"
 	"tropa/internal/friends"
 	"tropa/internal/meetups"
 	"tropa/internal/places"
 	"tropa/internal/store/storetest"
 )
+
+// mailbox — письма тестовых серверов: последний код подтверждения на адрес.
+type mailbox struct {
+	mu    sync.Mutex
+	codes map[string]string
+}
+
+var testMail = &mailbox{codes: map[string]string{}}
+
+var codeRe = regexp.MustCompile(`\d{6}`)
+
+func (m *mailbox) Send(_ context.Context, to, subject, _ string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.codes[strings.ToLower(to)] = codeRe.FindString(subject)
+	return nil
+}
+
+func (m *mailbox) code(email string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.codes[strings.ToLower(email)]
+}
 
 // client — браузер с cookie, который умеет доставать CSRF-токен из страницы.
 type client struct {
@@ -74,7 +100,8 @@ func newTestServer(t *testing.T) *httptest.Server {
 // setup меняет сервер до запуска: подставить погоду, часы.
 func newTestEnv(t *testing.T, setup ...func(*Server)) (*httptest.Server, *pgxpool.Pool) {
 	db := storetest.New(t)
-	srv, err := New(Config{}, Services{Auth: auth.New(db), Meetups: meetups.New(db), Places: places.New(db), Friends: friends.New(db)},
+	srv, err := New(Config{}, Services{Auth: auth.New(db), Meetups: meetups.New(db), Places: places.New(db), Friends: friends.New(db),
+		DM: dm.New(db), Mail: testMail},
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
@@ -100,11 +127,17 @@ func TestAccountFlow(t *testing.T) {
 	resp = c.post("/register", "/register", url.Values{
 		"email": {"a@b.kz"}, "name": {"Дархан"}, "password": {"password123"}, "password2": {"password123"},
 	})
-	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("регистрация: %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/verify" {
+		t.Fatalf("регистрация: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if code, body := c.get("/"); code != 200 || !strings.Contains(body, "Добро пожаловать") {
-		t.Fatalf("после регистрации нет приветствия: %d", code)
+	if code, body := c.get("/verify"); code != 200 || !strings.Contains(body, "a@b.kz") {
+		t.Fatalf("страница кода: %d", code)
+	}
+	if resp := c.post("/verify", "/verify", url.Values{"code": {testMail.code("a@b.kz")}}); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("подтверждение: %d", resp.StatusCode)
+	}
+	if code, body := c.get("/"); code != 200 || !strings.Contains(body, "Почта подтверждена") {
+		t.Fatalf("после подтверждения нет сообщения: %d", code)
 	}
 	if code, body := c.get("/me"); code != 200 || !strings.Contains(body, "a@b.kz") {
 		t.Fatalf("профиль: %d", code)

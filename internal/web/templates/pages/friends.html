@@ -3,7 +3,47 @@
 {{with .Data}}
 <div class="page-head first">
   <h1>Друзья</h1>
+  <a class="btn small ghost" href="/messages">Сообщения</a>
 </div>
+
+<section class="card friend-search">
+  <form method="get" action="/friends" class="search-row" role="search">
+    <input type="search" name="q" value="{{.Query}}" minlength="2" maxlength="100" placeholder="Имя или email друга" aria-label="Найти человека">
+    <button class="btn">Найти</button>
+  </form>
+  {{if .Searched}}
+  {{with .Found}}
+  <ul class="friend-list">
+    {{range .}}
+    <li>
+      <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
+      <a href="/u/{{.ID}}">{{.Name}}</a>
+      <span class="friend-actions">
+      {{if eq .Status "friends"}}
+        <a class="btn small" href="/messages/{{.ID}}">Написать</a>
+      {{else if eq .Status "outgoing"}}
+        <span class="muted small">Заявка отправлена</span>
+      {{else}}
+        <form method="post" action="/u/{{.ID}}/friend" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+          <input type="hidden" name="action" value="{{if eq .Status "incoming"}}accept{{else}}add{{end}}">
+          <input type="hidden" name="next" value="{{$.Data.Next}}">
+          <button class="btn small">{{if eq .Status "incoming"}}Принять заявку{{else}}Добавить в друзья{{end}}</button>
+        </form>
+      {{end}}
+      </span>
+    </li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p class="muted">Никого не нашли. Ищем по части имени или по email целиком; люди без подтверждённой почты в поиске не видны.</p>
+  {{end}}
+  {{end}}
+  <p class="muted small share-row">Или скиньте другу ссылку на свою страницу:
+    <input type="text" readonly value="{{.ProfileURL}}" aria-label="Ссылка на вашу страницу" class="copy-src">
+    <button type="button" class="btn small ghost copy-btn" hidden>Скопировать</button>
+  </p>
+</section>
 
 {{with .Incoming}}
 <section class="card friend-requests">
@@ -48,12 +88,13 @@
     <span class="avatar small" aria-hidden="true">{{initial .Name}}</span>
     <a href="/u/{{.ID}}">{{.Name}}</a>
     <span class="muted small">с {{date .Since}}</span>
+    <a class="btn small ghost" href="/messages/{{.ID}}">Написать</a>
   </li>
   {{end}}
 </ul>
 {{else}}
 <div class="empty">
-  <p>Друзей пока нет. Откройте страницу человека — например, из списка участников встречи — и нажмите «Добавить в друзья».</p>
+  <p>Друзей пока нет. Найдите человека поиском выше или откройте его страницу — например, из списка участников встречи — и нажмите «Добавить в друзья».</p>
 </div>
 {{end}}
 
@@ -76,3 +117,4 @@
 {{end}}
 {{end}}
 {{end}}
+{{define "scripts"}}<script src="/static/copy.js"></script>{{end}}

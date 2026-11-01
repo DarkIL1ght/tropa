@@ -71,6 +71,7 @@ type limits struct {
 	chat                  *limiter
 	friend                *limiter
 	suggest               *limiter
+	verify, resend        *limiter
 }
 
 func newLimits() *limits {
@@ -88,6 +89,9 @@ func newLimits() *limits {
 		friend: newLimiter(10, 2*time.Minute),
 		// предложения мест уведомляют админов: 3 подряд, затем одно в 10 минут
 		suggest: newLimiter(3, 10*time.Minute),
+		// ввод кода (у самого кода ещё свой предел попыток) и повторные письма
+		verify: newLimiter(10, time.Minute),
+		resend: newLimiter(3, 10*time.Minute),
 	}
 }
 

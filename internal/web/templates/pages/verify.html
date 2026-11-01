@@ -1,0 +1,25 @@
+{{define "title"}}Подтвердите почту{{end}}
+{{define "content"}}
+{{with .Data}}
+<form method="post" action="/verify" class="card form">
+  <h1>Подтвердите почту</h1>
+  <p>Мы отправили 6-значный код на <strong>{{.Email}}</strong>. Введите его, чтобы создавать встречи, записываться, писать в чаты и добавлять друзей.</p>
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  <input type="hidden" name="next" value="{{.Next}}">
+  {{with .Error}}<p class="err" role="alert">{{.}}</p>{{end}}
+  <label>Код из письма
+    <input type="text" name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="123456" autofocus>
+  </label>
+  <button class="btn">Подтвердить</button>
+  <p class="muted small">Код действует 15 минут. Письма нет? Проверьте «Спам» или запросите новый код.</p>
+</form>
+<form method="post" action="/verify/resend" class="card form">
+  <input type="hidden" name="csrf_token" value="{{$.CSRF}}">
+  <input type="hidden" name="next" value="{{.Next}}">
+  <button class="btn ghost">Отправить код ещё раз</button>
+  <p class="muted small">Ошиблись в адресе? <a href="/register">Зарегистрируйтесь заново</a> — неподтверждённый аккаунт удалится сам через неделю.</p>
+</form>
+{{end}}
+{{end}}
+{{/* плашка «подтвердите почту» здесь не нужна — это и есть страница подтверждения */}}
+{{define "verify_banner"}}{{end}}

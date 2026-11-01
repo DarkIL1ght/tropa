@@ -14,6 +14,7 @@
       {{$id := .Person.ID}}
       {{if eq .Friend "friends"}}
         <span class="badge">В друзьях</span>
+        <a class="btn small" href="/messages/{{$id}}">Написать</a>
         {{template "friend_button" (dict "ID" $id "Action" "remove" "Label" "Удалить из друзей" "CSRF" $.CSRF)}}
       {{else if eq .Friend "incoming"}}
         {{template "friend_button" (dict "ID" $id "Action" "accept" "Label" "Принять заявку" "CSRF" $.CSRF)}}

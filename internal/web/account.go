@@ -37,6 +37,11 @@ var flashText = map[string]string{
 	"offer_gone":       "Предложение места истекло.",
 	"telegram_off":     "Уведомления в Telegram отключены.",
 
+	"email_verified": "Почта подтверждена — теперь вам доступно всё.",
+	"code_sent":      "Отправили новый код.",
+	"code_too_soon":  "Код уже отправлен — новый можно запросить через минуту.",
+	"verify_first":   "Сначала подтвердите почту: введите код из письма.",
+
 	"friend_requested": "Заявка отправлена. Когда её примут, вы станете друзьями.",
 	"friend_added":     "Теперь вы друзья!",
 	"friend_removed":   "Готово.",
@@ -97,8 +102,11 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	flash(w, "welcome")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// не ушло письмо — на странице кода можно запросить его ещё раз
+	if err := s.sendCode(r, u); err != nil {
+		s.log.Error("письмо с кодом", "user", u.ID, "err", err)
+	}
+	http.Redirect(w, r, "/verify", http.StatusSeeOther)
 }
 
 func (s *Server) loginForm(w http.ResponseWriter, r *http.Request) {
