@@ -13,3 +13,15 @@
 	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy portfolio:8090
 }
+
+# ExamPrep М094 (отдельный compose-проект ~/m094): контейнер в общей сети tropa_default
+# под именем m094. Сайт закрыт общим паролем: логин student, пароль — у Дархана
+# (здесь только bcrypt-хэш; новый — docker exec tropa-caddy-1 caddy hash-password).
+{$M094_DOMAIN:m094.130-61-149-209.sslip.io} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	basic_auth {
+		student $2a$14$apKGXnZ96ByHwIt/RGeC6u9IvOUivj.9am/RMa0iw/Z3tY5WeC.Yq
+	}
+	reverse_proxy m094:8080
+}
