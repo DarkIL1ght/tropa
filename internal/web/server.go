@@ -200,7 +200,7 @@ type view struct {
 	Unread int
 	// AskVerify — показать плашку «подтвердите почту».
 	AskVerify bool
-	Data   any
+	Data      any
 }
 
 // render рисует страницу в буфер, чтобы ошибка шаблона не оставила
