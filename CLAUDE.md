@@ -9,7 +9,8 @@
 - Интерфейс и комментарии в коде — на русском.
 
 ## Карта кода
-- `cmd/tropa/main.go` — команды `serve` (миграции при старте, фоновая очистка сессий), `migrate`, `seed [папка]`, `make-admin <email>`; настройки — переменные окружения (см. шапку файла).
+Архитектура, контексты и ключевые решения — `docs/architecture.md`. В каждом контексте модель и правила лежат отдельно от SQL (`meetups/meetup.go` ↔ `service.go`, `auth/user.go` ↔ `service.go`, `dm/message.go` ↔ `service.go`, `places/places.go` ↔ `store.go`); новые функции — по тому же правилу.
+- `cmd/tropa` — `main.go` (разбор команд `serve`, `migrate`, `seed [папка]`, `make-admin <email>`, `reset-link`, `osm-fetch`; список переменных — в шапке), `config.go` (все переменные окружения читаются только здесь → `config`), `serve.go` (сборка сервисов и HTTP-сервера), `workers.go` (очистка сессий, задачи встреч), `commands.go`.
 - `internal/store` — `Open`, `Migrate` (файлы `migrations/NNN_*.sql` по порядку, каждый в своей транзакции, под advisory lock). Новая миграция — новый файл, старые не менять.
 - `internal/store/storetest` — `storetest.New(t)`: пул в новой схеме со всеми миграциями; без `TROPA_TEST_DATABASE_URL` тест пропускается.
 - `internal/auth` — пользователи (bcrypt, email без учёта регистра), сессии (в БД только SHA-256 токена), `Middleware` (пользователь в контексте + CSRF double-submit для всех не-GET), `RequireUser`, `SafeNext` для редиректов. Профиль: `ValidateName`/`ValidatePassword`, `UserByID`, `Rename`, `ChangePassword` (текущий пароль под `FOR UPDATE`, затем закрываются **все** сессии пользователя — текущему браузеру веб-слой открывает новую). Сброс пароля — `reset.go`: `RequestReset` (токен в `password_resets`, только SHA-256, старые токены удаляются, `send` вызывается в той же транзакции — веб ставит сообщение в outbox бота, команда `reset-link` печатает ссылку), `ResetUser`, `ResetPassword` (одноразово, закрывает все сессии).
