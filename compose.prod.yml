@@ -44,6 +44,8 @@ services:
       - app
     environment:
       DOMAIN: ${DOMAIN}
+      # пустой секрет пустил бы любого с cookie «m094_device=» — без него Caddy не стартует
+      M094_DEVICE_TOKEN: ${M094_DEVICE_TOKEN:?нужен M094_DEVICE_TOKEN в .env.prod}
     ports:
       - "80:80"
       - "443:443"

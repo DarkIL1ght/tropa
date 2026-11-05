@@ -17,13 +17,25 @@
 # ExamPrep М094 (отдельный compose-проект ~/m094): контейнер в общей сети tropa_default
 # под именем m094. Сайт закрыт общим паролем: логин student, пароль — у Дархана
 # (здесь только bcrypt-хэш; новый — docker exec tropa-caddy-1 caddy hash-password).
+# Устройство, где пароль уже вводили, помнится год: после входа ставится cookie m094_device с секретом
+# M094_DEVICE_TOKEN из .env.prod (не в git). Сменить секрет — забыть все устройства.
 {$M094_DOMAIN:m094.130-61-149-209.sslip.io} {
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
-	basic_auth {
-		student $2a$14$apKGXnZ96ByHwIt/RGeC6u9IvOUivj.9am/RMa0iw/Z3tY5WeC.Yq
+	@device header Cookie *m094_device={$M094_DEVICE_TOKEN}*
+	handle @device {
+		reverse_proxy m094:8080
 	}
-	reverse_proxy m094:8080
+	handle {
+		# route — порядок как написан: cookie ставится только после успешного пароля, не в ответе 401
+		route {
+			basic_auth {
+				student $2a$14$apKGXnZ96ByHwIt/RGeC6u9IvOUivj.9am/RMa0iw/Z3tY5WeC.Yq
+			}
+			header +Set-Cookie "m094_device={$M094_DEVICE_TOKEN}; Max-Age=31536000; Path=/; Secure; HttpOnly; SameSite=Lax"
+			reverse_proxy m094:8080
+		}
+	}
 }
 
 # Собес (отдельный compose-проект ~/sobes): контейнер в общей сети tropa_default под именем sobes.
