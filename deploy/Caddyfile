@@ -25,3 +25,11 @@
 	}
 	reverse_proxy m094:8080
 }
+
+# Собес (отдельный compose-проект ~/sobes): контейнер в общей сети tropa_default под именем sobes.
+# Сайт публичный — контент свой; прогресс в своей базе sobes-db.
+{$SOBES_DOMAIN:sobes.130-61-149-209.sslip.io} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy sobes:8090
+}
