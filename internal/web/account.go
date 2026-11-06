@@ -128,11 +128,13 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Email: strings.TrimSpace(r.PostFormValue("email")),
 		Next:  auth.SafeNext(r.PostFormValue("next")),
 	}
-	// подбор пароля: и с одного адреса, и к одному аккаунту с разных
-	okIP, retryIP := s.limits.loginIP.allow(s.clientIP(r))
-	okEmail, retryEmail := s.limits.loginEmail.allow(strings.ToLower(f.Email))
-	if !okIP || !okEmail {
-		f.Errors = map[string]string{"form": tooMany(w, max(retryIP, retryEmail))}
+	// подбор пароля: с одного адреса и к одному аккаунту с него же; общего лимита
+	// на аккаунт нет, иначе кто угодно мог бы заблокировать чужой вход
+	ip := s.clientIP(r)
+	okIP, retryIP := s.limits.loginIP.allow(ip)
+	okPair, retryPair := s.limits.loginPair.allow(loginKey(ip, f.Email))
+	if !okIP || !okPair {
+		f.Errors = map[string]string{"form": tooMany(w, max(retryIP, retryPair))}
 		s.render(w, r, http.StatusTooManyRequests, "login.html", f)
 		return
 	}

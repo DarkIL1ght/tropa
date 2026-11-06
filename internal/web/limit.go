@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-// limiter — «ведро жетонов» на ключ (IP, email, пользователь): до burst
+// limiter — «ведро жетонов» на ключ (IP, IP и email, пользователь): до burst
 // попыток подряд, затем по одной раз в per. Хранится в памяти: сервер
 // запускается в одном экземпляре (см. long polling бота), после рестарта
 // счётчики обнуляются — для защиты от подбора этого достаточно.
@@ -64,7 +65,7 @@ func (l *limiter) allow(key string) (bool, time.Duration) {
 
 // limits — ограничения частоты для форм, которые можно перебирать.
 type limits struct {
-	loginIP, loginEmail   *limiter
+	loginIP, loginPair    *limiter
 	register              *limiter
 	password              *limiter
 	forgotIP, forgotEmail *limiter
@@ -76,10 +77,10 @@ type limits struct {
 
 func newLimits() *limits {
 	return &limits{
-		loginIP:    newLimiter(10, 30*time.Second),
-		loginEmail: newLimiter(10, 2*time.Minute),
-		register:   newLimiter(5, 10*time.Minute),
-		password:   newLimiter(5, 3*time.Minute),
+		loginIP:   newLimiter(10, 30*time.Second),
+		loginPair: newLimiter(10, 2*time.Minute),
+		register:  newLimiter(5, 10*time.Minute),
+		password:  newLimiter(5, 3*time.Minute),
 		// сброс шлёт сообщения в Telegram — не даём спамить чужой аккаунт
 		forgotIP:    newLimiter(5, 10*time.Minute),
 		forgotEmail: newLimiter(3, 10*time.Minute),
@@ -111,6 +112,12 @@ func (s *Server) clientIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return host
+}
+
+// loginKey — ключ ведра входа: пара «адрес + email» без учёта регистра. Длина
+// адреса в начале не даёт разным парам склеиться: в email может быть любой символ.
+func loginKey(ip, email string) string {
+	return strconv.Itoa(len(ip)) + ":" + ip + strings.ToLower(email)
 }
 
 // tooMany — текст ошибки и заголовок Retry-After для ответа 429.
