@@ -188,7 +188,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/", s.notFound)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
-	return s.recoverer(securityHeaders(s.auth.Middleware(s.cfg.Secure)(mux)))
+	return s.recoverer(securityHeaders(limitAuthForms(s.auth.Middleware(s.cfg.Secure)(mux))))
 }
 
 // view — данные, общие для всех страниц.

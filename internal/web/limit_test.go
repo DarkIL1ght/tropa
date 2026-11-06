@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,6 +10,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"tropa/internal/auth"
 )
 
 func TestLimiter(t *testing.T) {
@@ -189,8 +192,8 @@ func TestLoginBruteForceFromOneIP(t *testing.T) {
 	}
 }
 
-func TestLoginKey(t *testing.T) {
-	if loginKey(ipA, "A@B.kz") != loginKey(ipA, "a@b.kz") {
+func TestPairKey(t *testing.T) {
+	if pairKey(ipA, "A@B.kz") != pairKey(ipA, "a@b.kz") {
 		t.Fatal("регистр email не должен влиять на ключ")
 	}
 	// email из формы может содержать что угодно, в IPv6 есть двоеточия
@@ -202,10 +205,149 @@ func TestLoginKey(t *testing.T) {
 	}
 	seen := map[string][2]string{}
 	for _, p := range pairs {
-		key := loginKey(p[0], p[1])
+		key := pairKey(p[0], p[1])
 		if prev, dup := seen[key]; dup {
 			t.Fatalf("склейка пар %q и %q: ключ %q", prev, p, key)
 		}
 		seen[key] = p
+	}
+}
+
+// limitEnv — сервер за прокси и его вёдра: тесты смотрят, какие ключи созданы.
+func limitEnv(t *testing.T) (*httptest.Server, *limits) {
+	var l *limits
+	ts, _ := newTestEnv(t, func(s *Server) {
+		s.cfg.TrustProxy = true
+		l = s.limits
+	})
+	return ts, l
+}
+
+func bucketCount(l *limiter) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.buckets)
+}
+
+// submit отправляет форму новым браузером с адреса ip: статус и текст ответа.
+func submit(t *testing.T, ts *httptest.Server, ip, path string, form url.Values) (int, string) {
+	t.Helper()
+	c := newClient(t, ts.URL)
+	c.http.Transport = forwardedFor(ip)
+	_, page := c.get(path)
+	m := csrfRe.FindStringSubmatch(page)
+	if m == nil {
+		t.Fatalf("на %s нет csrf_token", path)
+	}
+	form.Set("csrf_token", m[1])
+	resp, err := c.http.PostForm(ts.URL+path, form)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(body)
+}
+
+// emailOf — адрес длиной ровно n байт.
+func emailOf(n int) string {
+	const domain = "@tropa.kz"
+	return strings.Repeat("a", n-len(domain)) + domain
+}
+
+func TestLoginLongEmailSkipsLimiter(t *testing.T) {
+	ts, l := limitEnv(t)
+	code, body := submit(t, ts, ipA, "/login", url.Values{"email": {emailOf(maxEmailBytes + 1)}, "password": {"password123"}})
+	if code != http.StatusUnauthorized || !strings.Contains(body, auth.ErrBadLogin.Error()) {
+		t.Fatalf("длинный email: %d, ждали обычный отказ входа", code)
+	}
+	if n, m := bucketCount(l.loginIP), bucketCount(l.loginPair); n != 0 || m != 0 {
+		t.Fatalf("созданы вёдра: IP %d, пары %d", n, m)
+	}
+	// предельная длина — обычный адрес, он идёт через лимитер
+	if code, _ := submit(t, ts, ipA, "/login", url.Values{"email": {emailOf(maxEmailBytes)}, "password": {"password123"}}); code != http.StatusUnauthorized {
+		t.Fatalf("email предельной длины: %d", code)
+	}
+	if n := bucketCount(l.loginPair); n != 1 {
+		t.Fatalf("у email предельной длины вёдер пары: %d", n)
+	}
+}
+
+func TestForgotLongEmailSkipsLimiter(t *testing.T) {
+	ts, l := limitEnv(t)
+	code, body := submit(t, ts, ipA, "/password/forgot", url.Values{"email": {emailOf(maxEmailBytes + 1)}})
+	if code != http.StatusOK || !strings.Contains(body, "Проверьте Telegram") {
+		t.Fatalf("длинный email: %d, ждали обычный нейтральный ответ", code)
+	}
+	if n, m := bucketCount(l.forgotIP), bucketCount(l.forgotPair); n != 0 || m != 0 {
+		t.Fatalf("созданы вёдра: IP %d, пары %d", n, m)
+	}
+}
+
+func TestLoginExhaustedIPAddsNoPairBucket(t *testing.T) {
+	ts, l := limitEnv(t)
+	for i := range 10 {
+		form := url.Values{"email": {fmt.Sprintf("guess%d@tropa.kz", i)}, "password": {"wrong-pass"}}
+		if code, _ := submit(t, ts, ipA, "/login", form); code != http.StatusUnauthorized {
+			t.Fatalf("попытка %d: %d", i+1, code)
+		}
+	}
+	form := url.Values{"email": {"fresh@tropa.kz"}, "password": {"wrong-pass"}}
+	if code, _ := submit(t, ts, ipA, "/login", form); code != http.StatusTooManyRequests {
+		t.Fatalf("IP-ведро исчерпано: %d", code)
+	}
+	if n := bucketCount(l.loginPair); n != 10 {
+		t.Fatalf("вёдер пар %d, ждали 10", n)
+	}
+}
+
+func TestForgotExhaustedIPAddsNoPairBucket(t *testing.T) {
+	ts, l := limitEnv(t)
+	for i := range 5 {
+		form := url.Values{"email": {fmt.Sprintf("guess%d@tropa.kz", i)}}
+		if code, _ := submit(t, ts, ipA, "/password/forgot", form); code != http.StatusOK {
+			t.Fatalf("попытка %d: %d", i+1, code)
+		}
+	}
+	if code, _ := submit(t, ts, ipA, "/password/forgot", url.Values{"email": {"fresh@tropa.kz"}}); code != http.StatusTooManyRequests {
+		t.Fatalf("IP-ведро исчерпано: %d", code)
+	}
+	if n := bucketCount(l.forgotPair); n != 5 {
+		t.Fatalf("вёдер пар %d, ждали 5", n)
+	}
+}
+
+func TestForgotPairIsolated(t *testing.T) {
+	ts, _ := limitEnv(t)
+	for i := range 3 {
+		if code, _ := submit(t, ts, ipA, "/password/forgot", url.Values{"email": {strings.ToUpper(victimV)}}); code != http.StatusOK {
+			t.Fatalf("попытка %d: %d", i+1, code)
+		}
+	}
+	if code, _ := submit(t, ts, ipA, "/password/forgot", url.Values{"email": {victimV}}); code != http.StatusTooManyRequests {
+		t.Fatalf("пара исчерпана: %d", code)
+	}
+	if code, _ := submit(t, ts, ipB, "/password/forgot", url.Values{"email": {victimV}}); code != http.StatusOK {
+		t.Fatalf("тот же email с другого адреса: %d", code)
+	}
+	if code, _ := submit(t, ts, ipA, "/password/forgot", url.Values{"email": {otherW}}); code != http.StatusOK {
+		t.Fatalf("другой email с того же адреса: %d", code)
+	}
+}
+
+func TestAuthFormBodyLimit(t *testing.T) {
+	ts, l := limitEnv(t)
+	tooBig := strings.Repeat("a", maxAuthForm)
+	for _, path := range []string{"/login", "/password/forgot"} {
+		if code, _ := submit(t, ts, ipA, path, url.Values{"email": {tooBig}}); code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("%s: большое тело: %d, ждали 413", path, code)
+		}
+	}
+	if n, m := bucketCount(l.loginIP), bucketCount(l.forgotIP); n != 0 || m != 0 {
+		t.Fatalf("созданы вёдра: вход %d, сброс %d", n, m)
+	}
+	// предел только у этих двух форм
+	if code, _ := submit(t, ts, ipA, "/register", url.Values{"email": {tooBig}}); code != http.StatusUnprocessableEntity {
+		t.Fatalf("регистрация: %d, ждали 422", code)
 	}
 }

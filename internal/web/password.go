@@ -29,10 +29,14 @@ func (s *Server) forgotForm(w http.ResponseWriter, r *http.Request) {
 // перебирать, кто зарегистрирован.
 func (s *Server) forgot(w http.ResponseWriter, r *http.Request) {
 	v := forgotView{Email: strings.TrimSpace(r.PostFormValue("email")), Telegram: s.notify.Enabled()}
-	okIP, retryIP := s.limits.forgotIP.allow(s.clientIP(r))
-	okEmail, retryEmail := s.limits.forgotEmail.allow(strings.ToLower(v.Email))
-	if !okIP || !okEmail {
-		v.Errors = map[string]string{"form": tooMany(w, max(retryIP, retryEmail))}
+	// адрес длиннее предела — обычный ответ, без ведра на ключ любой длины
+	if len(v.Email) > maxEmailBytes {
+		v.Sent = true
+		s.render(w, r, http.StatusOK, "forgot.html", v)
+		return
+	}
+	if ok, retry := allowPair(s.limits.forgotIP, s.limits.forgotPair, s.clientIP(r), v.Email); !ok {
+		v.Errors = map[string]string{"form": tooMany(w, retry)}
 		s.render(w, r, http.StatusTooManyRequests, "forgot.html", v)
 		return
 	}

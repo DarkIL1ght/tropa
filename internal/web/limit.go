@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -8,6 +9,14 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	// maxEmailBytes — предел длины адреса по RFC 5321: адрес длиннее не проверяется
+	// и ключом ведра не становится.
+	maxEmailBytes = 254
+	// maxAuthForm — предел тела форм входа и сброса пароля.
+	maxAuthForm = 64 << 10
 )
 
 // limiter — «ведро жетонов» на ключ (IP, IP и email, пользователь): до burst
@@ -65,14 +74,14 @@ func (l *limiter) allow(key string) (bool, time.Duration) {
 
 // limits — ограничения частоты для форм, которые можно перебирать.
 type limits struct {
-	loginIP, loginPair    *limiter
-	register              *limiter
-	password              *limiter
-	forgotIP, forgotEmail *limiter
-	chat                  *limiter
-	friend                *limiter
-	suggest               *limiter
-	verify, resend        *limiter
+	loginIP, loginPair   *limiter
+	register             *limiter
+	password             *limiter
+	forgotIP, forgotPair *limiter
+	chat                 *limiter
+	friend               *limiter
+	suggest              *limiter
+	verify, resend       *limiter
 }
 
 func newLimits() *limits {
@@ -81,9 +90,9 @@ func newLimits() *limits {
 		loginPair: newLimiter(10, 2*time.Minute),
 		register:  newLimiter(5, 10*time.Minute),
 		password:  newLimiter(5, 3*time.Minute),
-		// сброс шлёт сообщения в Telegram — не даём спамить чужой аккаунт
-		forgotIP:    newLimiter(5, 10*time.Minute),
-		forgotEmail: newLimiter(3, 10*time.Minute),
+		// сброс шлёт сообщения в Telegram — не даём спамить с одного адреса
+		forgotIP:   newLimiter(5, 10*time.Minute),
+		forgotPair: newLimiter(3, 10*time.Minute),
 		// чат: короткая пачка можно, поток — не чаще раза в секунду
 		chat: newLimiter(5, time.Second),
 		// заявки в друзья шлют уведомления — не даём рассылать их пачками
@@ -114,10 +123,35 @@ func (s *Server) clientIP(r *http.Request) string {
 	return host
 }
 
-// loginKey — ключ ведра входа: пара «адрес + email» без учёта регистра. Длина
-// адреса в начале не даёт разным парам склеиться: в email может быть любой символ.
-func loginKey(ip, email string) string {
+// pairKey — ключ ведра пары «адрес + email» без учёта регистра. Длина адреса
+// в начале не даёт разным парам склеиться: в email может быть любой символ.
+func pairKey(ip, email string) string {
 	return strconv.Itoa(len(ip)) + ":" + ip + strings.ToLower(email)
+}
+
+// allowPair тратит попытку адреса, затем пары. С исчерпанного адреса новые
+// вёдра пар не создаются: иначе перебор адресов почты занимал бы память.
+func allowPair(byIP, byPair *limiter, ip, email string) (bool, time.Duration) {
+	if ok, retry := byIP.allow(ip); !ok {
+		return false, retry
+	}
+	return byPair.allow(pairKey(ip, email))
+}
+
+// limitAuthForms ограничивает тело форм входа и сброса пароля. Стоит до
+// auth.Middleware: та разбирает форму первой, ради CSRF-токена.
+func limitAuthForms(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && (r.URL.Path == "/login" || r.URL.Path == "/password/forgot") {
+			r.Body = http.MaxBytesReader(w, r.Body, maxAuthForm)
+			var tooLarge *http.MaxBytesError
+			if err := r.ParseForm(); errors.As(err, &tooLarge) {
+				http.Error(w, "Слишком большой запрос", http.StatusRequestEntityTooLarge)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // tooMany — текст ошибки и заголовок Retry-After для ответа 429.
